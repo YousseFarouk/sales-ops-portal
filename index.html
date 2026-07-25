@@ -99,7 +99,6 @@
     gap:6px;
   }
 
-  /* ---------- search ---------- */
   .search-wrap{position:relative;}
   #searchInput{
     width:100%;
@@ -164,7 +163,6 @@
   }
   #suggestions .empty{padding:16px;color:var(--text-mute);font-size:14.5px;text-align:center;}
 
-  /* ---------- selected client chip ---------- */
   #selectedChip{
     display:none;
     align-items:center;
@@ -184,7 +182,6 @@
     width:28px;height:28px;border-radius:50%;font-size:13px;cursor:pointer;flex-shrink:0;
   }
 
-  /* ---------- loading row ---------- */
   #loadingRow{
     display:none;align-items:center;gap:8px;
     font-size:13.5px;color:var(--text-mute);margin-top:12px;padding-top:14px;
@@ -197,7 +194,6 @@
   }
   @keyframes spin{to{transform:rotate(360deg);}}
 
-  /* ---------- existing-client edit panel ---------- */
   #infoBox{
     display:none;
     margin-top:12px;
@@ -209,7 +205,6 @@
     display:flex;align-items:center;gap:6px;
   }
 
-  /* ---------- new-client panel ---------- */
   #newClientBox{
     display:none;
     background:var(--accent-light);
@@ -240,7 +235,6 @@
   .field input.invalid{border-color:var(--danger);background:#fdf1f1;}
   .field .err-msg{font-size:12px;color:var(--danger);font-weight:600;display:none;padding-inline-start:2px;}
 
-  /* ---------- status ---------- */
   .status-row{display:flex;gap:10px;}
   .status-btn{
     flex:1;padding:16px 10px;
@@ -260,7 +254,6 @@
   #reasonBox{display:none;margin-top:12px;}
   #reasonInput{min-height:88px;resize:vertical;}
 
-  /* ---------- sticky bottom bar ---------- */
   .bottom-bar{
     position:fixed;left:0;right:0;bottom:0;
     background:#fff;
@@ -292,13 +285,11 @@
     margin-top:8px;
   }
 
-  /* نسخة الإصدار — صغيرة تحت في آخر الصفحة، مش لافتة للنظر */
   #buildTag{
     text-align:center;color:#a7b0bc;font-size:10.5px;
     margin-top:16px;padding-bottom:4px;
   }
 
-  /* ---------- toast ---------- */
   #toast{
     position:fixed;left:50%;bottom:calc(var(--bottombar-h) + 14px);transform:translateX(-50%) translateY(20px);
     background:var(--text);color:#fff;
@@ -315,7 +306,6 @@
   #toast.success{background:var(--accent);}
   #toast.error{background:var(--danger);}
 
-  /* ---------- success overlay ---------- */
   #successOverlay{
     position:fixed;inset:0;background:rgba(20,30,50,0.55);
     display:none;align-items:center;justify-content:center;z-index:2000;
@@ -372,7 +362,6 @@
       <span>جاري تحميل بيانات العميل...</span>
     </div>
 
-    <!-- existing client: edit panel -->
     <div id="infoBox">
       <div class="hint">✏️ تقدر تعدل أي بيانات هنا (حتى الاسم) — هتتحدث تلقائيًا عند الحفظ</div>
       <div class="field-grid">
@@ -396,7 +385,6 @@
       </div>
     </div>
 
-    <!-- new client panel -->
     <div id="newClientBox">
       <div class="hint">🆕 عميل جديد — البيانات دي هتتسجل تلقائيًا في القائمة المرجعية عند الحفظ</div>
       <div class="field-grid">
@@ -468,13 +456,13 @@
   'use strict';
 
   var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxQXD9Oq0WhQVl387abzEmnb2nB4u0LyJUHBM6AQs5uSbNds3KFqlpoUOEDTlbhWbf3/exec';
-  var BUILD_TAG = 'v5';
+  var BUILD_TAG = 'v6';
 
   var state = {
     allClients: [],
-    originalClientName: '', // الاسم زي ما كان مسجل قبل أي تعديل
-    selectedClientName: '', // '' = لا شيء / '__new__' = عميل جديد / اسم = عميل موجود
-    selectedStatus: ''      // 'نعم' | 'لا'
+    originalClientName: '',
+    selectedClientName: '',
+    selectedStatus: ''
   };
 
   var el = {};
@@ -841,14 +829,12 @@
       if (!e.target.closest('.search-wrap')) hideSuggestions();
     });
 
+    // بدل ما نقفل الـ Dropdown عند أي Scroll (بما فيه فتح الكيبورد)، بس نعيد تحديد مكانه
     window.addEventListener('resize', function () {
       if (el.suggestions && el.suggestions.style.display === 'block') positionSuggestions();
     });
-
-    window.addEventListener('scroll', function (e) {
-      if (!el.suggestions) return;
-      if (e.target === el.suggestions || (el.suggestions.contains && el.suggestions.contains(e.target))) return;
-      hideSuggestions();
+    window.addEventListener('scroll', function () {
+      if (el.suggestions && el.suggestions.style.display === 'block') positionSuggestions();
     }, true);
 
     el.infoPhone.addEventListener('input', function () { setFieldError(el.infoPhone, el.infoPhoneErr, false); });
