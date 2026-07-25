@@ -205,6 +205,23 @@
     display:flex;align-items:center;gap:6px;
   }
 
+  /* منطقة العميل — عرض للقراءة بس + زرار تحديث */
+  .region-row{
+    display:flex;align-items:center;gap:8px;
+    background:#f7f9fb;border-radius:var(--radius-sm);
+    padding:11px 13px;margin-bottom:12px;
+  }
+  .region-row .region-text{
+    flex:1;font-size:14.5px;font-weight:600;color:var(--text);
+  }
+  .region-row .region-text.empty{color:var(--text-mute);font-weight:500;}
+  #refreshRegionBtn{
+    border:none;background:var(--primary-light);color:var(--primary);
+    padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:700;
+    cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;
+  }
+  #refreshRegionBtn:disabled{opacity:0.6;cursor:not-allowed;}
+
   #newClientBox{
     display:none;
     background:var(--accent-light);
@@ -216,6 +233,9 @@
   #newClientBox .hint{
     font-size:12px;color:#2e6b32;margin-bottom:12px;
     display:flex;align-items:center;gap:6px;
+  }
+  #newClientBox .note{
+    font-size:11.5px;color:#6b7684;margin-top:-6px;margin-bottom:12px;
   }
 
   .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -364,6 +384,12 @@
 
     <div id="infoBox">
       <div class="hint">✏️ تقدر تعدل أي بيانات هنا (حتى الاسم) — هتتحدث تلقائيًا عند الحفظ</div>
+
+      <div class="region-row">
+        <span class="region-text empty" id="regionText">المنطقة: هتتحدد أول ما تحفظ الزيارة من موقعك الحالي</span>
+        <button type="button" id="refreshRegionBtn">📍 تحديث المنطقة</button>
+      </div>
+
       <div class="field-grid">
         <div class="field full">
           <label>👤 اسم العميل</label>
@@ -387,6 +413,7 @@
 
     <div id="newClientBox">
       <div class="hint">🆕 عميل جديد — البيانات دي هتتسجل تلقائيًا في القائمة المرجعية عند الحفظ</div>
+      <div class="note">المنطقة هتتحدد تلقائي من موقعك الفعلي أول ما تحفظ الزيارة</div>
       <div class="field-grid">
         <div class="field full">
           <label>الاسم *</label>
@@ -455,8 +482,8 @@
 (function () {
   'use strict';
 
-  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwCH_ZMCFJx5Y4Anf3Eih21x9a69tfEWPltA7ZyPi1ckHQ9SVNibZ2SjnPjplD7WV2T/exec';
-  var BUILD_TAG = 'v6';
+  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyLeyQyQbHjHS5ww1Rppck8Q_TXM-vtN7xjRW055mfWH43V106vfp65gYhDsd2DGaiI/exec';
+  var BUILD_TAG = 'v7';
 
   var state = {
     allClients: [],
@@ -489,6 +516,9 @@
     el.infoPhone = document.getElementById('infoPhone');
     el.infoAddress = document.getElementById('infoAddress');
     el.infoPhoneErr = document.getElementById('infoPhoneErr');
+
+    el.regionText = document.getElementById('regionText');
+    el.refreshRegionBtn = document.getElementById('refreshRegionBtn');
 
     el.newClientBox = document.getElementById('newClientBox');
     el.newName = document.getElementById('newName');
@@ -620,6 +650,16 @@
     el.clearSearch.style.display = query ? 'flex' : 'none';
   }
 
+  function renderRegion(region) {
+    if (region && region.trim() !== '') {
+      el.regionText.textContent = '📍 المنطقة: ' + region;
+      el.regionText.classList.remove('empty');
+    } else {
+      el.regionText.textContent = 'المنطقة: هتتحدد أول ما تحفظ الزيارة من موقعك الحالي';
+      el.regionText.classList.add('empty');
+    }
+  }
+
   function selectClient(name) {
     state.selectedClientName = name;
     hideSuggestions();
@@ -652,9 +692,11 @@
         el.infoCategory.value = details ? (details.category || '') : '';
         el.infoPhone.value = details ? (details.phone || '') : '';
         el.infoAddress.value = details ? (details.address || '') : '';
+        renderRegion(details ? details.region : '');
       })
       .catch(function (err) {
         el.infoName.value = name;
+        renderRegion('');
         showToast('تعذر تحميل بيانات العميل، اكتبها يدويًا: ' + err.message, 'error');
       })
       .then(function () {
@@ -671,6 +713,41 @@
     el.newClientBox.style.display = 'none';
     el.loadingRow.style.display = 'none';
     el.searchInput.value = '';
+  }
+
+  function refreshRegionNow() {
+    if (!state.originalClientName) return;
+    if (!navigator.geolocation) {
+      showToast('الموبايل ده مش بيدعم تحديد الموقع', 'error');
+      return;
+    }
+    el.refreshRegionBtn.disabled = true;
+    el.refreshRegionBtn.textContent = '⏳ جاري التحديد...';
+
+    navigator.geolocation.getCurrentPosition(function (position) {
+      callApi('refreshRegion', {
+        name: state.originalClientName,
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      }).then(function (json) {
+        var region = json.data ? json.data.region : '';
+        if (region) {
+          renderRegion(region);
+          showToast('تم تحديث المنطقة ✅', 'success');
+        } else {
+          showToast('تعذر تحديد المنطقة، جرب تاني', 'error');
+        }
+      }).catch(function (err) {
+        showToast('حصل خطأ: ' + err.message, 'error');
+      }).then(function () {
+        el.refreshRegionBtn.disabled = false;
+        el.refreshRegionBtn.textContent = '📍 تحديث المنطقة';
+      });
+    }, function () {
+      showToast('لازم توافق على مشاركة الموقع', 'error');
+      el.refreshRegionBtn.disabled = false;
+      el.refreshRegionBtn.textContent = '📍 تحديث المنطقة';
+    }, { enableHighAccuracy: true, timeout: 10000 });
   }
 
   function chooseStatus(status) {
@@ -719,6 +796,7 @@
     el.reasonBox.style.display = 'none';
     el.btnYes.classList.remove('selected');
     el.btnNo.classList.remove('selected');
+    renderRegion('');
     setFieldError(el.infoPhone, el.infoPhoneErr, false);
     setFieldError(el.newPhone, el.newPhoneErr, false);
     setFieldError(el.newName, el.newNameErr, false);
@@ -824,12 +902,12 @@
     el.searchInput.addEventListener('focus', renderSuggestions);
     el.clearSearch.addEventListener('click', clearClient);
     el.clearChipBtn.addEventListener('click', clearClient);
+    el.refreshRegionBtn.addEventListener('click', refreshRegionNow);
 
     document.addEventListener('click', function (e) {
       if (!e.target.closest('.search-wrap')) hideSuggestions();
     });
 
-    // بدل ما نقفل الـ Dropdown عند أي Scroll (بما فيه فتح الكيبورد)، بس نعيد تحديد مكانه
     window.addEventListener('resize', function () {
       if (el.suggestions && el.suggestions.style.display === 'block') positionSuggestions();
     });
