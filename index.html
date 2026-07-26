@@ -205,11 +205,10 @@
     display:flex;align-items:center;gap:6px;
   }
 
-  /* منطقة العميل — عرض للقراءة بس + زرار تحديث */
   .region-row{
     display:flex;align-items:center;gap:8px;
     background:#f7f9fb;border-radius:var(--radius-sm);
-    padding:11px 13px;margin-bottom:12px;
+    padding:11px 13px;margin-bottom:10px;
   }
   .region-row .region-text{
     flex:1;font-size:14.5px;font-weight:600;color:var(--text);
@@ -221,6 +220,16 @@
     cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;
   }
   #refreshRegionBtn:disabled{opacity:0.6;cursor:not-allowed;}
+
+  .invoice-summary-row{
+    display:flex;gap:10px;margin-bottom:12px;
+  }
+  .invoice-summary-box{
+    flex:1;background:#f7f9fb;border-radius:var(--radius-sm);
+    padding:10px 12px;text-align:center;
+  }
+  .invoice-summary-box .lbl{font-size:11px;color:var(--text-mute);font-weight:600;margin-bottom:3px;}
+  .invoice-summary-box .val{font-size:15px;color:var(--primary-dark);font-weight:800;}
 
   #newClientBox{
     display:none;
@@ -273,6 +282,9 @@
 
   #reasonBox{display:none;margin-top:12px;}
   #reasonInput{min-height:88px;resize:vertical;}
+
+  #invoiceBox{display:none;margin-top:12px;}
+  #invoiceValueInput{font-size:17px;}
 
   .bottom-bar{
     position:fixed;left:0;right:0;bottom:0;
@@ -390,6 +402,17 @@
         <button type="button" id="refreshRegionBtn">📍 تحديث المنطقة</button>
       </div>
 
+      <div class="invoice-summary-row">
+        <div class="invoice-summary-box">
+          <div class="lbl">آخر فاتورة</div>
+          <div class="val" id="lastInvoiceVal">—</div>
+        </div>
+        <div class="invoice-summary-box">
+          <div class="lbl">مجموع الفواتير</div>
+          <div class="val" id="totalInvoicesVal">—</div>
+        </div>
+      </div>
+
       <div class="field-grid">
         <div class="field full">
           <label>👤 اسم العميل</label>
@@ -447,6 +470,14 @@
         <span class="emoji">❌</span> لم تتم
       </button>
     </div>
+
+    <div id="invoiceBox">
+      <div class="field full">
+        <label>💰 قيمة الفاتورة (جنيه)</label>
+        <input type="number" id="invoiceValueInput" placeholder="0" inputmode="decimal" min="0" step="0.01">
+      </div>
+    </div>
+
     <div id="reasonBox">
       <div class="field full">
         <label>سبب عدم الزيارة *</label>
@@ -482,8 +513,8 @@
 (function () {
   'use strict';
 
-  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxydif7-y9Ye4PmrgAkTHrFTYm5oZpLHIJoYrap-VSmJ1z6qL6pluOCs74BTwDjKkPp/exec';
-  var BUILD_TAG = 'v7';
+  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxMoFJzMWl0n0n4fTjjKBA7bxScWkBdXVdGU2FpXyOZ56pFQ93l3RPWGYE2TfqXN1Nb/exec';
+  var BUILD_TAG = 'v8';
 
   var state = {
     allClients: [],
@@ -520,6 +551,9 @@
     el.regionText = document.getElementById('regionText');
     el.refreshRegionBtn = document.getElementById('refreshRegionBtn');
 
+    el.lastInvoiceVal = document.getElementById('lastInvoiceVal');
+    el.totalInvoicesVal = document.getElementById('totalInvoicesVal');
+
     el.newClientBox = document.getElementById('newClientBox');
     el.newName = document.getElementById('newName');
     el.newCategory = document.getElementById('newCategory');
@@ -530,6 +564,8 @@
 
     el.btnYes = document.getElementById('btnYes');
     el.btnNo = document.getElementById('btnNo');
+    el.invoiceBox = document.getElementById('invoiceBox');
+    el.invoiceValueInput = document.getElementById('invoiceValueInput');
     el.reasonBox = document.getElementById('reasonBox');
     el.reasonInput = document.getElementById('reasonInput');
     el.reasonInputErr = document.getElementById('reasonInputErr');
@@ -552,6 +588,11 @@
   function isValidEgyptPhone(phone) {
     var clean = (phone || '').replace(/\s+/g, '');
     return /^01[0125][0-9]{8}$/.test(clean);
+  }
+
+  function fmtMoney(v) {
+    var n = parseFloat(v) || 0;
+    return n.toLocaleString('ar-EG') + ' ج';
   }
 
   function setFieldError(inputEl, errEl, show) {
@@ -693,10 +734,14 @@
         el.infoPhone.value = details ? (details.phone || '') : '';
         el.infoAddress.value = details ? (details.address || '') : '';
         renderRegion(details ? details.region : '');
+        el.lastInvoiceVal.textContent = fmtMoney(details ? details.lastInvoice : 0);
+        el.totalInvoicesVal.textContent = fmtMoney(details ? details.totalInvoices : 0);
       })
       .catch(function (err) {
         el.infoName.value = name;
         renderRegion('');
+        el.lastInvoiceVal.textContent = '—';
+        el.totalInvoicesVal.textContent = '—';
         showToast('تعذر تحميل بيانات العميل، اكتبها يدويًا: ' + err.message, 'error');
       })
       .then(function () {
@@ -755,7 +800,9 @@
     el.btnYes.classList.toggle('selected', status === 'نعم');
     el.btnNo.classList.toggle('selected', status === 'لا');
     el.reasonBox.style.display = (status === 'لا') ? 'block' : 'none';
+    el.invoiceBox.style.display = (status === 'نعم') ? 'block' : 'none';
     if (status !== 'لا') setFieldError(el.reasonInput, el.reasonInputErr, false);
+    if (status !== 'نعم') el.invoiceValueInput.value = '';
   }
 
   function setSaving(isSaving) {
@@ -794,9 +841,13 @@
     el.newAddress.value = '';
     el.reasonInput.value = '';
     el.reasonBox.style.display = 'none';
+    el.invoiceBox.style.display = 'none';
+    el.invoiceValueInput.value = '';
     el.btnYes.classList.remove('selected');
     el.btnNo.classList.remove('selected');
     renderRegion('');
+    el.lastInvoiceVal.textContent = '—';
+    el.totalInvoicesVal.textContent = '—';
     setFieldError(el.infoPhone, el.infoPhoneErr, false);
     setFieldError(el.newPhone, el.newPhoneErr, false);
     setFieldError(el.newName, el.newNameErr, false);
@@ -815,6 +866,8 @@
       showToast('اكتب سبب عدم الزيارة', 'error');
       return;
     }
+
+    var invoiceValue = (state.selectedStatus === 'نعم') ? (parseFloat(el.invoiceValueInput.value) || 0) : 0;
 
     var isNew = clientName === '__new__';
     var phoneInput = isNew ? el.newPhone : el.infoPhone;
@@ -866,7 +919,7 @@
           .then(function () {
             return callApi('saveVisit', {
               name: name, status: state.selectedStatus, lat: lat, lng: lng,
-              reason: reason, phone: phone, category: category
+              reason: reason, phone: phone, category: category, invoiceValue: invoiceValue
             });
           })
           .then(function (json) { finishSave(json.message); })
@@ -885,7 +938,7 @@
           .then(function () {
             return callApi('saveVisit', {
               name: finalName, status: state.selectedStatus, lat: lat, lng: lng,
-              reason: reason, phone: exPhone, category: exCategory
+              reason: reason, phone: exPhone, category: exCategory, invoiceValue: invoiceValue
             });
           })
           .then(function (json) { finishSave(json.message); })
