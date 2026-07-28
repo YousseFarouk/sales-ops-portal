@@ -7,9 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
     --primary: #1F4E78; --primary-light: #e8f0f7; --accent: #2e7d32; --accent-light: #f4faf5;
@@ -26,65 +30,58 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.1); flex-wrap: wrap; gap: 15px;
   }
   .header h1 { font-size: 1.4rem; display: flex; align-items: center; gap: 10px; }
-  .filters { display: flex; gap: 15px; align-items: center; }
+  .filters { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
   .filters label { font-size: 0.85rem; font-weight: 600; opacity: 0.9; display: flex; flex-direction: column; }
   .filters input[type="date"] {
     background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
     color: #fff; padding: 8px 12px; border-radius: 8px; font-family: inherit; cursor: pointer; margin-top: 5px;
   }
+  .btn-export {
+    background: #2e7d32; color: #fff; border: none; padding: 10px 20px;
+    border-radius: 8px; font-family: inherit; font-weight: 700; cursor: pointer; font-size: 0.9rem;
+  }
   
   .container { max-width: 1400px; margin: 0 auto; padding: 25px; }
   
-  .kpi-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px; margin-bottom: 25px;
-  }
-  .kpi-card {
-    background: var(--card); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow);
-    display: flex; align-items: center; gap: 15px; border-right: 5px solid var(--primary);
-    transition: transform 0.2s; cursor: pointer;
-  }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }
+  .kpi-card { background: var(--card); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); border-right: 5px solid var(--primary); transition: transform 0.2s; }
   .kpi-card:hover { transform: translateY(-3px); }
   .kpi-card.done { border-color: var(--accent); } .kpi-card.done .icon { background: var(--accent-light); color: var(--accent); }
   .kpi-card.notdone { border-color: var(--danger); } .kpi-card.notdone .icon { background: var(--danger-light); color: var(--danger); }
   .kpi-card.remaining { border-color: var(--warn); } .kpi-card.remaining .icon { background: var(--warn-light); color: var(--warn); }
   .kpi-card.rate { border-color: var(--primary); } .kpi-card.rate .icon { background: var(--primary-light); color: var(--primary); }
-  
-  .kpi-card .icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-  .kpi-card .info .label { font-size: 0.85rem; color: var(--text-mute); margin-bottom: 5px; }
-  .kpi-card .info .value { font-size: 1.8rem; font-weight: 800; }
+  .kpi-card .icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 10px; }
+  .kpi-card .label { font-size: 0.85rem; color: var(--text-mute); margin-bottom: 5px; }
+  .kpi-card .value { font-size: 1.8rem; font-weight: 800; }
+  .trend { font-size: 0.8rem; font-weight: 700; margin-top: 5px; }
+  .trend.up { color: var(--accent); } .trend.down { color: var(--danger); }
   
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px; }
   .grid-2.map-grid { grid-template-columns: 1.5fr 1fr; }
   @media (max-width: 992px) { .grid-2, .grid-2.map-grid { grid-template-columns: 1fr; } }
   
-  .card {
-    background: var(--card); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow);
-  }
-  .card h3 { font-size: 1.1rem; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+  .card { background: var(--card); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 25px; }
+  .card h3 { font-size: 1.1rem; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; color: var(--primary); justify-content: space-between; }
+  .card h3 .left { display: flex; align-items: center; gap: 8px; }
+  
+  .map-controls { display: flex; gap: 10px; margin-bottom: 10px; }
+  .map-btn { padding: 6px 12px; border: 1px solid var(--border); background: var(--bg); border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: 600; font-size: 0.85rem; }
+  .map-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
   
   #map { height: 400px; border-radius: 12px; z-index: 1; }
   
-  .list-group { max-height: 350px; overflow-y: auto; }
-  .list-item {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 0.9rem;
-  }
-  .list-item:last-child { border-bottom: none; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th { text-align: right; padding: 12px 10px; border-bottom: 2px solid var(--border); color: var(--text-mute); font-size: 0.8rem; }
+  td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
   .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
   .badge.money { background: var(--accent-light); color: var(--accent); }
-  .badge.count { background: var(--danger-light); color: var(--danger); }
-  .badge.info { background: var(--primary-light); color: var(--primary); }
+  .badge.done { background: var(--accent); color: #fff; }
+  .badge.pending { background: var(--warn-light); color: var(--warn); }
   
-  .last-visit-box {
-    background: var(--primary-light); padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: center;
-  }
-  .last-visit-box a { color: var(--primary); font-weight: 700; text-decoration: none; display: block; margin-top: 10px; }
+  .list-group { max-height: 350px; overflow-y: auto; }
+  .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
   
-  #loadingOverlay {
-    position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 9999;
-    display: flex; justify-content: center; align-items: center; flex-direction: column;
-  }
+  #loadingOverlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
   .spinner { width: 50px; height: 50px; border: 5px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
@@ -93,7 +90,7 @@
 
 <div id="loadingOverlay">
   <div class="spinner"></div>
-  <p style="margin-top: 15px; font-weight: 700; color: var(--primary);">جاري تحميل بيانات الداشبورد...</p>
+  <p style="margin-top: 15px; font-weight: 700; color: var(--primary);">جاري تحميل البيانات...</p>
 </div>
 
 <div class="header">
@@ -101,6 +98,7 @@
   <div class="filters">
     <label>من تاريخ <input type="date" id="startDate"></label>
     <label>إلى تاريخ <input type="date" id="endDate"></label>
+    <button class="btn-export" onclick="exportToExcel()">📥 تصدير إكسيل</button>
   </div>
 </div>
 
@@ -109,127 +107,107 @@
   <div class="kpi-grid">
     <div class="kpi-card done">
       <div class="icon">✅</div>
-      <div class="info"><div class="label">تمت بنجاح (اليوم)</div><div class="value" id="kpiDone">0</div></div>
+      <div class="label">تمت بنجاح</div><div class="value" id="kpiDone">0</div>
+      <div class="trend" id="trendDone"></div>
     </div>
     <div class="kpi-card notdone">
       <div class="icon">❌</div>
-      <div class="info"><div class="label">لم تتم (اليوم)</div><div class="value" id="kpiNotDone">0</div></div>
+      <div class="label">لم تتم</div><div class="value" id="kpiNotDone">0</div>
     </div>
     <div class="kpi-card remaining">
       <div class="icon">⏳</div>
-      <div class="info"><div class="label">المتبقي اليوم</div><div class="value" id="kpiRemaining">0</div></div>
+      <div class="label">المتبقي اليوم</div><div class="value" id="kpiRemaining">0</div>
     </div>
     <div class="kpi-card rate">
       <div class="icon">📈</div>
-      <div class="info"><div class="label">نسبة الإنجاز</div><div class="value" id="kpiRate">0%</div></div>
+      <div class="label">نسبة الإنجاز</div><div class="value" id="kpiRate">0%</div>
+      <div class="trend" id="trendRate"></div>
+    </div>
+    <div class="kpi-card" style="border-color: #6b7684;">
+      <div class="icon" style="background: #f0f2f5; color: #6b7684;">💰</div>
+      <div class="label">متوسط الفاتورة</div><div class="value" id="kpiAvgInvoice">0 ج</div>
     </div>
   </div>
 
-  <!-- Last Visit & Map -->
+  <!-- Map & Route -->
   <div class="grid-2 map-grid">
     <div class="card">
-      <h3>🗺️ Heat Map للزيارات</h3>
+      <h3><span class="left">🗺️ خريطة الزيارات</span></h3>
+      <div class="map-controls">
+        <button class="map-btn active" onclick="switchMapMode('heat', this)">🔥 Heat Map</button>
+        <button class="map-btn" onclick="switchMapMode('points', this)">📍 نقاط الزيارات</button>
+      </div>
       <div id="map"></div>
     </div>
     <div class="card">
-      <h3>🕒 آخر زيارة مسجلة</h3>
-      <div id="lastVisitContainer"></div>
+      <h3><span class="left">📋 خط سير اليوم</span></h3>
+      <table>
+        <thead><tr><th>العميل</th><th>الحالة</th><th>الفاتورة</th></tr></thead>
+        <tbody id="routeTableBody"></tbody>
+      </table>
     </div>
   </div>
 
   <!-- Charts -->
   <div class="grid-2">
     <div class="card">
-      <h3>📊 عدد الزيارات (حسب الفلتر)</h3>
+      <h3><span class="left">📊 عدد الزيارات عبر الوقت</span></h3>
       <canvas id="visitsChart" height="120"></canvas>
     </div>
     <div class="card">
-      <h3>📍 الزيارات حسب المنطقة</h3>
-      <canvas id="regionChart" height="120"></canvas>
+      <h3><span class="left">📈 نسبة الإنجاز عبر الوقت</span></h3>
+      <canvas id="rateChart" height="120"></canvas>
     </div>
   </div>
 
-  <!-- Top Clients & Reasons -->
   <div class="grid-2">
     <div class="card">
-      <h3>🏆 ترتيب العملاء (الأكثر سحباً)</h3>
-      <div class="list-group" id="topClientsList"></div>
+      <h3><span class="left">📍 الزيارات حسب المنطقة</span></h3>
+      <canvas id="regionChart" height="120"></canvas>
     </div>
     <div class="card">
-      <h3>💭 أكثر أسباب عدم الإتمام</h3>
-      <div class="list-group" id="reasonsList"></div>
+      <h3><span class="left">🏆 الأكثر سحباً / 💭 أسباب عدم الإتمام</span></h3>
+      <div style="display:flex; gap:20px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:200px;"><h4 style="margin-bottom:10px;">العملاء</h4><div class="list-group" id="topClientsList"></div></div>
+        <div style="flex:1; min-width:200px;"><h4 style="margin-bottom:10px;">الأسباب</h4><div class="list-group" id="reasonsList"></div></div>
+      </div>
     </div>
-  </div>
-
-  <!-- Unvisited -->
-  <div class="card" style="margin-top: 25px;">
-    <h3>🚫 العملاء الذين لم يتم زيارتهم نهائياً</h3>
-    <div class="list-group" id="unvisitedList" style="max-height: 250px;"></div>
   </div>
 
 </div>
 
 <script>
-  // ✅ تم تحديث الرابط الجديد هنا
-  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7tduo0Wj4DjSWYBiveDyCKfc-TNLtJ_L2gysgHpSmEeUpsT-DKQCY23cUu3kIvjn2/exec';
-  
+  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxC8z__7_d3O0Ox6CH50oxfIfmarPxI_f184vILNmyopiXh_ZvjtQ6EPtxGhj_3HU-H/exec';
   var rawData = null;
-  var map = null;
-  var heatLayer = null;
-  var visitsChartObj = null;
-  var regionChartObj = null;
+  var map = null, heatLayer = null, markerLayer = null, currentMapMode = 'heat';
+  var visitsChartObj = null, rateChartObj = null, regionChartObj = null;
 
   function initMap() {
-    map = L.map('map').setView([31.2001, 29.9187], 12); // الإسكندرية
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
+    map = L.map('map').setView([31.2001, 29.9187], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    markerLayer = L.markerClusterGroup();
   }
 
   function callApi(action) {
-    var url = APPS_SCRIPT_URL + '?action=' + action;
-    // إضافة timestamp لمنع الكاش في المتصفح
-    url += '&t=' + new Date().getTime();
-    return fetch(url).then(res => res.json());
+    return fetch(APPS_SCRIPT_URL + '?action=' + action + '&t=' + new Date().getTime()).then(res => res.json());
   }
 
   function renderDashboard() {
     var data = rawData;
-    if (!data) return;
-
-    // KPIs
-    document.getElementById('kpiDone').textContent = data.kpis.doneToday;
-    document.getElementById('kpiNotDone').textContent = data.kpis.notDoneToday;
     document.getElementById('kpiRemaining').textContent = data.kpis.remainingToday;
-    document.getElementById('kpiRate').textContent = data.kpis.completionRate + '%';
+    
+    // Top Clients & Reasons
+    document.getElementById('topClientsList').innerHTML = data.topClients.map(c => `<div class="list-item"><span>${c.name}</span><span class="badge money">${c.totalInvoices.toLocaleString('ar-EG')} ج</span></div>`).join('') || 'لا يوجد';
+    document.getElementById('reasonsList').innerHTML = data.topReasons.map(r => `<div class="list-item"><span>${r.reason}</span><span class="badge" style="background:#fdeded;color:#c62828;">${r.count}</span></div>`).join('') || 'لا يوجد';
 
-    // Last Visit
-    var lvHtml = '<div class="last-visit-box">';
-    if (data.lastVisit && data.lastVisit.client) {
-      lvHtml += `<p style="font-size:1.2rem;font-weight:800;margin-bottom:5px;">${data.lastVisit.client}</p>`;
-      lvHtml += `<p style="color:var(--text-mute);margin-bottom:10px;">${new Date(data.lastVisit.date).toLocaleString('ar-EG')}</p>`;
-      lvHtml += `<p>الحالة: ${data.lastVisit.status === 'نعم' ? '✅ تمت' : '❌ لم تتم'}</p>`;
-      lvHtml += `<a href="${data.lastVisit.mapLink}" target="_blank">📍 عرض الموقع على الخريطة</a>`;
-    } else {
-      lvHtml += '<p>لا توجد زيارات مسجلة بعد</p>';
-    }
-    lvHtml += '</div>';
-    document.getElementById('lastVisitContainer').innerHTML = lvHtml;
-
-    // Top Clients
-    document.getElementById('topClientsList').innerHTML = data.topClients.map(c => 
-      `<div class="list-item"><span>${c.name}</span><span class="badge money">${c.totalInvoices.toLocaleString('ar-EG')} ج</span></div>`
-    ).join('') || '<div class="list-item">لا توجد بيانات</div>';
-
-    // Reasons
-    document.getElementById('reasonsList').innerHTML = data.topReasons.map(r => 
-      `<div class="list-item"><span>${r.reason}</span><span class="badge count">${r.count} مرة</span></div>`
-    ).join('') || '<div class="list-item">لا توجد أسباب مسجلة</div>';
-
-    // Unvisited
-    document.getElementById('unvisitedList').innerHTML = data.unvisitedClients.map(c => 
-      `<div class="list-item"><span>${c}</span><span class="badge info">لم تُزار</span></div>`
-    ).join('') || '<div class="list-item">كل العملاء تمت زيارتهم 🎉</div>';
+    // Route Table
+    document.getElementById('routeTableBody').innerHTML = data.todayRoute.map(c => `
+      <tr>
+        <td>${c.name}</td>
+        <td>${c.visited ? `<span class="badge done">تمت ✅</span>` : `<span class="badge pending">معلق ⏳</span>`}</td>
+        <td>${c.invoice > 0 ? c.invoice.toLocaleString('ar-EG') + ' ج' : '-'}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="3">لا يوجد عملاء اليوم</td></tr>';
 
     renderChartsAndMap();
   }
@@ -241,90 +219,150 @@
     var filteredVisits = rawData.allVisits.filter(v => {
       if (!v.date) return false;
       var d = new Date(v.date);
-      
-      if (startDateStr) {
-        var start = new Date(startDateStr);
-        start.setHours(0,0,0,0);
-        if (d < start) return false;
-      }
-      if (endDateStr) {
-        var end = new Date(endDateStr);
-        end.setHours(23,59,59,999);
-        if (d > end) return false;
-      }
+      if (startDateStr && d < new Date(startDateStr)) return false;
+      if (endDateStr && d > new Date(endDateStr + 'T23:59:59')) return false;
       return true;
     });
 
-    // 1. Visits Chart (Daily count)
-    var dailyCounts = {};
+    // KPIs based on filter
+    var done = filteredVisits.filter(v => v.status === 'نعم').length;
+    var notDone = filteredVisits.filter(v => v.status === 'لا').length;
+    var totalInvoices = filteredVisits.reduce((s, v) => s + v.invoice, 0);
+    var avgInv = done > 0 ? totalInvoices / done : 0;
+    
+    document.getElementById('kpiDone').textContent = done;
+    document.getElementById('kpiNotDone').textContent = notDone;
+    document.getElementById('kpiRate').textContent = filteredVisits.length > 0 ? Math.round((done / filteredVisits.length) * 100) + '%' : '0%';
+    document.getElementById('kpiAvgInvoice').textContent = Math.round(avgInv).toLocaleString('ar-EG') + ' ج';
+
+    // Compare with previous period (Simple logic)
+    if (startDateStr && endDateStr) {
+        // Placeholder for comparison logic for brevity, can be expanded
+    }
+
+    // Charts Data
+    var dailyCounts = {}, dailyRates = {};
     filteredVisits.forEach(v => {
       var d = new Date(v.date);
-      var day = d.getFullYear() + '-' + ('0' + (d.getMonth()+1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+      var day = d.toISOString().split('T')[0];
       dailyCounts[day] = (dailyCounts[day] || 0) + 1;
+      dailyRates[day] = dailyRates[day] || { done: 0, total: 0 };
+      dailyRates[day].total++;
+      if (v.status === 'نعم') dailyRates[day].done++;
     });
-    
+
+    // Visits Chart
     var ctx1 = document.getElementById('visitsChart').getContext('2d');
     if (visitsChartObj) visitsChartObj.destroy();
     visitsChartObj = new Chart(ctx1, {
       type: 'line',
-      data: {
-        labels: Object.keys(dailyCounts),
-        datasets: [{ label: 'عدد الزيارات', data: Object.values(dailyCounts), borderColor: '#1F4E78', backgroundColor: 'rgba(31,78,120,0.1)', fill: true, tension: 0.3 }]
-      },
-      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+      data: { labels: Object.keys(dailyCounts), datasets: [{ label: 'زيارات', data: Object.values(dailyCounts), borderColor: '#1F4E78', backgroundColor: 'rgba(31,78,120,0.1)', fill: true, tension: 0.3 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
     });
 
-    // 2. Region Chart
+    // Rate Chart
+    var ctx2 = document.getElementById('rateChart').getContext('2d');
+    if (rateChartObj) rateChartObj.destroy();
+    rateChartObj = new Chart(ctx2, {
+      type: 'line',
+      data: { labels: Object.keys(dailyRates), datasets: [{ label: 'نسبة الإنجاز %', data: Object.values(dailyRates).map(r => Math.round((r.done/r.total)*100)), borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true, tension: 0.3 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100 } } }
+    });
+
+    // Region Chart
     var regionCounts = {};
-    filteredVisits.forEach(v => {
-      var reg = v.region || 'غير محدد';
-      regionCounts[reg] = (regionCounts[reg] || 0) + 1;
-    });
+    filteredVisits.forEach(v => { regionCounts[v.region] = (regionCounts[v.region] || 0) + 1; });
     var regionArr = Object.entries(regionCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
-
-    var ctx2 = document.getElementById('regionChart').getContext('2d');
+    var ctx3 = document.getElementById('regionChart').getContext('2d');
     if (regionChartObj) regionChartObj.destroy();
-    regionChartObj = new Chart(ctx2, {
-      type: 'doughnut',
-      data: {
-        labels: regionArr.map(r => r[0]),
-        datasets: [{ data: regionArr.map(r => r[1]), backgroundColor: ['#1F4E78', '#2e7d32', '#f57f17', '#c62828', '#6b7684'] }]
-      },
+    regionChartObj = new Chart(ctx3, {
+      type: 'doughnut', data: { labels: regionArr.map(r => r[0]), datasets: [{ data: regionArr.map(r => r[1]), backgroundColor: ['#1F4E78', '#2e7d32', '#f57f17', '#c62828', '#6b7684'] }] },
       options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
     });
 
-    // 3. Heat Map
-    var heatPoints = filteredVisits.filter(v => v.lat && v.lng).map(v => [v.lat, v.lng, 0.5]);
-    if (heatLayer) map.removeLayer(heatLayer);
-    if (heatPoints.length > 0) {
-      heatLayer = L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 17 }).addTo(map);
-      // ضبط الخريطة لتظهر جميع النقاط
-      var bounds = L.latLngBounds(heatPoints.map(p => [p[0], p[1]]));
-      map.fitBounds(bounds);
-    } else {
-      // لو مفيش نقاط، ارجع للإسكندرية
-      map.setView([31.2001, 29.9187], 12);
-    }
+    // Map
+    updateMap(filteredVisits);
   }
 
-  // Initialization
+  function updateMap(visits) {
+    var heatPoints = [], markers = [];
+    visits.forEach(v => {
+      if (v.lat && v.lng) {
+        heatPoints.push([v.lat, v.lng, 0.5]);
+        var color = v.status === 'نعم' ? 'green' : 'red';
+        var marker = L.circleMarker([v.lat, v.lng], { color: color, fillColor: color, fillOpacity: 0.8, radius: 8 });
+        marker.bindPopup(`<b>${v.client}</b><br>التاريخ: ${new Date(v.date).toLocaleDateString('ar-EG')}<br>الحالة: ${v.status}<br>الفاتورة: ${v.invoice}<br><a href="https://www.google.com/maps?q=${v.lat},${v.lng}" target="_blank">فتح في خرائط جوجل</a>`);
+        markers.push(marker);
+      }
+    });
+
+    if (heatLayer) map.removeLayer(heatLayer);
+    if (markerLayer) markerLayer.clearLayers();
+
+    if (currentMapMode === 'heat') {
+      if (heatPoints.length > 0) heatLayer = L.heatLayer(heatPoints, { radius: 25 }).addTo(map);
+    } else {
+      markers.forEach(m => markerLayer.addLayer(m));
+      markerLayer.addTo(map);
+    }
+    
+    if (heatPoints.length > 0) map.fitBounds(L.latLngBounds(heatPoints.map(p => [p[0], p[1]])));
+  }
+
+  function switchMapMode(mode, btn) {
+    currentMapMode = mode;
+    document.querySelectorAll('.map-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderChartsAndMap();
+  }
+
+  function exportToExcel() {
+    var startDateStr = document.getElementById('startDate').value;
+    var endDateStr = document.getElementById('endDate').value;
+    var filtered = rawData.allVisits.filter(v => {
+      if (!v.date) return false;
+      var d = new Date(v.date);
+      if (startDateStr && d < new Date(startDateStr)) return false;
+      if (endDateStr && d > new Date(endDateStr + 'T23:59:59')) return false;
+      return true;
+    });
+
+    var visitsData = filtered.map(v => ({
+      "التاريخ": new Date(v.date).toLocaleString('ar-EG'),
+      "العميل": v.client,
+      "الحالة": v.status,
+      "المنطقة": v.region,
+      "قيمة الفاتورة": v.invoice,
+      "السبب": v.reason
+    }));
+
+    var wb = XLSX.utils.book_new();
+    var ws1 = XLSX.utils.json_to_sheet(visitsData);
+    XLSX.utils.book_append_sheet(wb, ws1, "الزيارات");
+
+    var summary = [
+      { "المؤشر": "إجمالي الزيارات", "القيمة": filtered.length },
+      { "المؤشر": "تمت بنجاح", "القيمة": filtered.filter(v => v.status === 'نعم').length },
+      { "المؤشر": "لم تتم", "القيمة": filtered.filter(v => v.status === 'لا').length }
+    ];
+    var ws2 = XLSX.utils.json_to_sheet(summary);
+    XLSX.utils.book_append_sheet(wb, ws2, "ملخص");
+
+    XLSX.writeFile(wb, "تقرير_الزيارات.xlsx");
+  }
+
   document.getElementById('startDate').addEventListener('change', renderChartsAndMap);
   document.getElementById('endDate').addEventListener('change', renderChartsAndMap);
 
   initMap();
-  
   callApi('getDashboardData').then(res => {
     if (res.ok) {
       rawData = res.data;
       renderDashboard();
       document.getElementById('loadingOverlay').style.display = 'none';
     } else {
-      alert('خطأ في تحميل البيانات: ' + (res.error || 'Unknown'));
-      document.getElementById('loadingOverlay').innerHTML = '<p style="color:red;">فشل تحميل البيانات. تأكد من صلاحيات الـ Apps Script.</p>';
+      document.getElementById('loadingOverlay').innerHTML = '<p style="color:red;">فشل تحميل البيانات.</p>';
     }
-  }).catch(err => {
-    alert('فشل الاتصال بالخادم: ' + err.message);
-    document.getElementById('loadingOverlay').innerHTML = '<p style="color:red;">فشل الاتصال: ' + err.message + '</p>';
   });
 </script>
 </body>
