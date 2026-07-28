@@ -26,20 +26,23 @@
   
   .header {
     background: linear-gradient(135deg, var(--primary), #163a59);
-    color: #fff; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center;
+    color: #fff; padding: 20px 30px; display: flex; justify-content: space-between; align-items: flex-start;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1); flex-wrap: wrap; gap: 15px;
   }
+  .header-left { display: flex; flex-direction: column; gap: 12px; }
   .header h1 { font-size: 1.4rem; display: flex; align-items: center; gap: 10px; }
+  
+  .view-toggle { display: flex; background: rgba(255,255,255,0.15); border-radius: 10px; overflow: hidden; width: fit-content; }
+  .toggle-btn { background: transparent; border: none; color: #fff; padding: 8px 20px; cursor: pointer; font-family: inherit; font-weight: 700; font-size: 0.9rem; transition: 0.2s; }
+  .toggle-btn.active { background: #fff; color: var(--primary); }
+  
   .filters { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
   .filters label { font-size: 0.85rem; font-weight: 600; opacity: 0.9; display: flex; flex-direction: column; }
   .filters input[type="date"] {
     background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
     color: #fff; padding: 8px 12px; border-radius: 8px; font-family: inherit; cursor: pointer; margin-top: 5px;
   }
-  .btn-export {
-    background: #2e7d32; color: #fff; border: none; padding: 10px 20px;
-    border-radius: 8px; font-family: inherit; font-weight: 700; cursor: pointer; font-size: 0.9rem;
-  }
+  .btn-export { background: #2e7d32; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-family: inherit; font-weight: 700; cursor: pointer; font-size: 0.9rem; height: fit-content; }
   
   .container { max-width: 1400px; margin: 0 auto; padding: 25px; }
   
@@ -53,8 +56,6 @@
   .kpi-card .icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 10px; }
   .kpi-card .label { font-size: 0.85rem; color: var(--text-mute); margin-bottom: 5px; }
   .kpi-card .value { font-size: 1.8rem; font-weight: 800; }
-  .trend { font-size: 0.8rem; font-weight: 700; margin-top: 5px; }
-  .trend.up { color: var(--accent); } .trend.down { color: var(--danger); }
   
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px; }
   .grid-2.map-grid { grid-template-columns: 1.5fr 1fr; }
@@ -78,6 +79,8 @@
   .badge.done { background: var(--accent); color: #fff; }
   .badge.pending { background: var(--warn-light); color: var(--warn); }
   
+  .btn-link { background: none; border: none; color: var(--primary); cursor: pointer; font-family: inherit; font-weight: 700; font-size: 0.9rem; text-decoration: underline; margin-top: 10px; display: block; width: 100%; text-align: center; }
+  
   .list-group { max-height: 350px; overflow-y: auto; }
   .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
   
@@ -94,7 +97,13 @@
 </div>
 
 <div class="header">
-  <h1>📊 لوحة تحكم المندوب</h1>
+  <div class="header-left">
+    <h1>📊 لوحة تحكم المندوب</h1>
+    <div class="view-toggle">
+      <button class="toggle-btn active" id="btnAll" onclick="setView('all')">الكل</button>
+      <button class="toggle-btn" id="btnToday" onclick="setView('today')">اليوم</button>
+    </div>
+  </div>
   <div class="filters">
     <label>من تاريخ <input type="date" id="startDate"></label>
     <label>إلى تاريخ <input type="date" id="endDate"></label>
@@ -103,33 +112,14 @@
 </div>
 
 <div class="container">
-  <!-- KPIs -->
   <div class="kpi-grid">
-    <div class="kpi-card done">
-      <div class="icon">✅</div>
-      <div class="label">تمت بنجاح</div><div class="value" id="kpiDone">0</div>
-      <div class="trend" id="trendDone"></div>
-    </div>
-    <div class="kpi-card notdone">
-      <div class="icon">❌</div>
-      <div class="label">لم تتم</div><div class="value" id="kpiNotDone">0</div>
-    </div>
-    <div class="kpi-card remaining">
-      <div class="icon">⏳</div>
-      <div class="label">المتبقي اليوم</div><div class="value" id="kpiRemaining">0</div>
-    </div>
-    <div class="kpi-card rate">
-      <div class="icon">📈</div>
-      <div class="label">نسبة الإنجاز</div><div class="value" id="kpiRate">0%</div>
-      <div class="trend" id="trendRate"></div>
-    </div>
-    <div class="kpi-card" style="border-color: #6b7684;">
-      <div class="icon" style="background: #f0f2f5; color: #6b7684;">💰</div>
-      <div class="label">متوسط الفاتورة</div><div class="value" id="kpiAvgInvoice">0 ج</div>
-    </div>
+    <div class="kpi-card done"><div class="icon">✅</div><div class="label">تمت بنجاح</div><div class="value" id="kpiDone">0</div></div>
+    <div class="kpi-card notdone"><div class="icon">❌</div><div class="label">لم تتم</div><div class="value" id="kpiNotDone">0</div></div>
+    <div class="kpi-card remaining"><div class="icon">⏳</div><div class="label">المتبقي اليوم</div><div class="value" id="kpiRemaining">0</div></div>
+    <div class="kpi-card rate"><div class="icon">📈</div><div class="label">نسبة الإنجاز</div><div class="value" id="kpiRate">0%</div></div>
+    <div class="kpi-card" style="border-color: #6b7684;"><div class="icon" style="background: #f0f2f5; color: #6b7684;">💰</div><div class="label">متوسط الفاتورة</div><div class="value" id="kpiAvgInvoice">0 ج</div></div>
   </div>
 
-  <!-- Map & Route -->
   <div class="grid-2 map-grid">
     <div class="card">
       <h3><span class="left">🗺️ خريطة الزيارات</span></h3>
@@ -148,7 +138,6 @@
     </div>
   </div>
 
-  <!-- Charts -->
   <div class="grid-2">
     <div class="card">
       <h3><span class="left">📊 عدد الزيارات عبر الوقت</span></h3>
@@ -173,7 +162,6 @@
       </div>
     </div>
   </div>
-
 </div>
 
 <script>
@@ -181,6 +169,7 @@
   var rawData = null;
   var map = null, heatLayer = null, markerLayer = null, currentMapMode = 'heat';
   var visitsChartObj = null, rateChartObj = null, regionChartObj = null;
+  var showAllRoute = false;
 
   function initMap() {
     map = L.map('map').setView([31.2001, 29.9187], 12);
@@ -192,16 +181,40 @@
     return fetch(APPS_SCRIPT_URL + '?action=' + action + '&t=' + new Date().getTime()).then(res => res.json());
   }
 
+  function setView(view) {
+    showAllRoute = false; // تصفير المتغير كل ما نغير الفيو
+    if (view === 'today') {
+      var today = new Date();
+      var todayStr = today.toISOString().split('T')[0];
+      document.getElementById('startDate').value = todayStr;
+      document.getElementById('endDate').value = todayStr;
+      document.getElementById('btnToday').classList.add('active');
+      document.getElementById('btnAll').classList.remove('active');
+    } else {
+      document.getElementById('startDate').value = '';
+      document.getElementById('endDate').value = '';
+      document.getElementById('btnAll').classList.add('active');
+      document.getElementById('btnToday').classList.remove('active');
+    }
+    renderChartsAndMap();
+    renderRouteTable(); // تحديث جدول خط السير
+  }
+
   function renderDashboard() {
     var data = rawData;
     document.getElementById('kpiRemaining').textContent = data.kpis.remainingToday;
     
-    // Top Clients & Reasons
     document.getElementById('topClientsList').innerHTML = data.topClients.map(c => `<div class="list-item"><span>${c.name}</span><span class="badge money">${c.totalInvoices.toLocaleString('ar-EG')} ج</span></div>`).join('') || 'لا يوجد';
     document.getElementById('reasonsList').innerHTML = data.topReasons.map(r => `<div class="list-item"><span>${r.reason}</span><span class="badge" style="background:#fdeded;color:#c62828;">${r.count}</span></div>`).join('') || 'لا يوجد';
 
-    // Route Table
-    document.getElementById('routeTableBody').innerHTML = data.todayRoute.map(c => `
+    renderRouteTable();
+    renderChartsAndMap();
+  }
+
+  function renderRouteTable() {
+    var route = rawData.todayRoute;
+    var limit = showAllRoute ? route.length : 5;
+    var html = route.slice(0, limit).map(c => `
       <tr>
         <td>${c.name}</td>
         <td>${c.visited ? `<span class="badge done">تمت ✅</span>` : `<span class="badge pending">معلق ⏳</span>`}</td>
@@ -209,7 +222,15 @@
       </tr>
     `).join('') || '<tr><td colspan="3">لا يوجد عملاء اليوم</td></tr>';
 
-    renderChartsAndMap();
+    if (route.length > 5 && !showAllRoute) {
+      html += `<tr><td colspan="3"><button class="btn-link" onclick="showMoreRoute()">عرض المزيد (${route.length - 5})</button></td></tr>`;
+    }
+    document.getElementById('routeTableBody').innerHTML = html;
+  }
+
+  function showMoreRoute() {
+    showAllRoute = true;
+    renderRouteTable();
   }
 
   function renderChartsAndMap() {
@@ -224,7 +245,6 @@
       return true;
     });
 
-    // KPIs based on filter
     var done = filteredVisits.filter(v => v.status === 'نعم').length;
     var notDone = filteredVisits.filter(v => v.status === 'لا').length;
     var totalInvoices = filteredVisits.reduce((s, v) => s + v.invoice, 0);
@@ -235,12 +255,6 @@
     document.getElementById('kpiRate').textContent = filteredVisits.length > 0 ? Math.round((done / filteredVisits.length) * 100) + '%' : '0%';
     document.getElementById('kpiAvgInvoice').textContent = Math.round(avgInv).toLocaleString('ar-EG') + ' ج';
 
-    // Compare with previous period (Simple logic)
-    if (startDateStr && endDateStr) {
-        // Placeholder for comparison logic for brevity, can be expanded
-    }
-
-    // Charts Data
     var dailyCounts = {}, dailyRates = {};
     filteredVisits.forEach(v => {
       var d = new Date(v.date);
@@ -251,7 +265,6 @@
       if (v.status === 'نعم') dailyRates[day].done++;
     });
 
-    // Visits Chart
     var ctx1 = document.getElementById('visitsChart').getContext('2d');
     if (visitsChartObj) visitsChartObj.destroy();
     visitsChartObj = new Chart(ctx1, {
@@ -260,7 +273,6 @@
       options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
     });
 
-    // Rate Chart
     var ctx2 = document.getElementById('rateChart').getContext('2d');
     if (rateChartObj) rateChartObj.destroy();
     rateChartObj = new Chart(ctx2, {
@@ -269,7 +281,6 @@
       options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100 } } }
     });
 
-    // Region Chart
     var regionCounts = {};
     filteredVisits.forEach(v => { regionCounts[v.region] = (regionCounts[v.region] || 0) + 1; });
     var regionArr = Object.entries(regionCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
@@ -280,7 +291,6 @@
       options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
     });
 
-    // Map
     updateMap(filteredVisits);
   }
 
@@ -351,8 +361,17 @@
     XLSX.writeFile(wb, "تقرير_الزيارات.xlsx");
   }
 
-  document.getElementById('startDate').addEventListener('change', renderChartsAndMap);
-  document.getElementById('endDate').addEventListener('change', renderChartsAndMap);
+  // ربط الفلتر بالرسم البياني
+  document.getElementById('startDate').addEventListener('change', function() {
+    document.getElementById('btnAll').classList.remove('active');
+    document.getElementById('btnToday').classList.remove('active');
+    renderChartsAndMap();
+  });
+  document.getElementById('endDate').addEventListener('change', function() {
+    document.getElementById('btnAll').classList.remove('active');
+    document.getElementById('btnToday').classList.remove('active');
+    renderChartsAndMap();
+  });
 
   initMap();
   callApi('getDashboardData').then(res => {
