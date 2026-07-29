@@ -509,7 +509,7 @@
   'use strict';
 
   var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzxd5-KcUJUdkxu_ez9xZBKvRosOEDQcxpSdcel9U0ruK-2-beinjWzbBH8Pzq3tIz_/exec';
-  var BUILD_TAG = 'v13'; // <--- تم تحديث الإصدار
+  var BUILD_TAG = 'v14'; // <--- تم تحديث الإصدار لاستخدام ArcGIS
 
   var state = {
     allClients: [],
@@ -726,7 +726,7 @@
         el.infoName.value = name;
         el.infoCategory.value = details ? (details.category || '') : '';
         el.infoPhone.value = details ? (details.phone || '') : '';
-        el.infoAddress.value = details ? (details.manualAddress || '') : ''; // قراءة العنوان اليدوي
+        el.infoAddress.value = details ? (details.manualAddress || '') : '';
         renderRegion(details ? details.region : '');
         el.lastInvoiceVal.textContent = fmtMoney(details ? details.lastInvoice : 0);
         el.totalInvoicesVal.textContent = fmtMoney(details ? details.totalInvoices : 0);
@@ -868,41 +868,25 @@
       var lat = position.coords.latitude;
       var lng = position.coords.longitude;
 
-      var regionUrl = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lng + '&accept-language=ar';
+      // ✅ استخدام ArcGIS API لأقوى دقة في مصر
+      var regionUrl = 'https://geocode.arcgis.com/geocode/reverseGeocode?location=' + lng + ',' + lat + '&f=json&langCode=ar';
       
       fetch(regionUrl)
         .then(function(res) { return res.json(); })
         .then(function(data) {
-          var addr = data.address || {};
-          
-          // ✅ 1. تنظيف واستخراج المنطقة الحقيقية (السيوف، سموحة، الخ) وتجاهل المباني والأحياء الإدارية
-          var badWords = /(ابراج|برج|عمارة|ميدان|شارع|كوبري|استاد|محطة|كمب|منشية)/i;
-          var regionName = '';
-          
-          if (addr.suburb && !badWords.test(addr.suburb)) {
-            regionName = addr.suburb;
-          } else if (addr.neighbourhood && !badWords.test(addr.neighbourhood)) {
-            regionName = addr.neighbourhood;
-          } else if (addr.suburb) {
-            regionName = addr.suburb; // Fallback
-          } else if (addr.neighbourhood) {
-            regionName = addr.neighbourhood; // Fallback
-          } else if (addr.city) {
-            regionName = addr.city;
+          if (!data || !data.address) {
+            processSave(lat, lng, 'موقع غير محدد', 'لم يُحدد بعد');
+            return;
           }
           
-          if (!regionName) regionName = 'موقع غير محدد';
-
-          // ✅ 2. بناء العنوان التفصيلي يدوياً (بدون مصر، وبدون أكواد بريدية)
-          var rawAddress = data.display_name || '';
-          var addrParts = rawAddress.split('،').map(function(s) { return s.trim(); });
-          var cleanAddrParts = addrParts.filter(function(p) {
-            if (!p) return false;
-            if (p === 'مصر' || p === 'Egypt') return false; // شيل اسم الدولة
-            if (/^\d+$/.test(p)) return false; // شيل الكود البريدي (لو كان كله أرقام)
-            return true;
-          });
-          var detailedAddress = cleanAddrParts.join('، ');
+          var addr = data.address;
+          
+          // 1. استخراج المنطقة (الحي الفرعي أو المدينة)
+          var regionName = addr.Neighborhood || addr.Subregion || addr.City || 'موقع غير محدد';
+          
+          // 2. استخراج العنوان التفصيلي (Match_addr) وتنظيفه من كلمة "مصر"
+          var detailedAddress = addr.Match_addr || 'لم يُحدد بعد';
+          detailedAddress = detailedAddress.replace(/,?\s*Egypt\s*,?/gi, '').replace(/,?\s*مصر\s*,?/g, '').trim();
           if (!detailedAddress) detailedAddress = 'لم يُحدد بعد';
 
           processSave(lat, lng, regionName, detailedAddress);
