@@ -508,9 +508,8 @@
 (function () {
   'use strict';
 
-  // ✅ تم تحديث رابط الـ Apps Script الجديد
   var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzxd5-KcUJUdkxu_ez9xZBKvRosOEDQcxpSdcel9U0ruK-2-beinjWzbBH8Pzq3tIz_/exec';
-  var BUILD_TAG = 'v12';
+  var BUILD_TAG = 'v13'; // <--- تم تحديث الإصدار
 
   var state = {
     allClients: [],
@@ -875,9 +874,37 @@
         .then(function(res) { return res.json(); })
         .then(function(data) {
           var addr = data.address || {};
-          var regionName = addr.suburb || addr.neighbourhood || addr.city_district || addr.town || addr.city || 'موقع غير محدد';
-          // ✅ استخراج العنوان التفصيلي الكامل
-          var detailedAddress = data.display_name || 'لم يُحدد بعد';
+          
+          // ✅ 1. تنظيف واستخراج المنطقة الحقيقية (السيوف، سموحة، الخ) وتجاهل المباني والأحياء الإدارية
+          var badWords = /(ابراج|برج|عمارة|ميدان|شارع|كوبري|استاد|محطة|كمب|منشية)/i;
+          var regionName = '';
+          
+          if (addr.suburb && !badWords.test(addr.suburb)) {
+            regionName = addr.suburb;
+          } else if (addr.neighbourhood && !badWords.test(addr.neighbourhood)) {
+            regionName = addr.neighbourhood;
+          } else if (addr.suburb) {
+            regionName = addr.suburb; // Fallback
+          } else if (addr.neighbourhood) {
+            regionName = addr.neighbourhood; // Fallback
+          } else if (addr.city) {
+            regionName = addr.city;
+          }
+          
+          if (!regionName) regionName = 'موقع غير محدد';
+
+          // ✅ 2. بناء العنوان التفصيلي يدوياً (بدون مصر، وبدون أكواد بريدية)
+          var rawAddress = data.display_name || '';
+          var addrParts = rawAddress.split('،').map(function(s) { return s.trim(); });
+          var cleanAddrParts = addrParts.filter(function(p) {
+            if (!p) return false;
+            if (p === 'مصر' || p === 'Egypt') return false; // شيل اسم الدولة
+            if (/^\d+$/.test(p)) return false; // شيل الكود البريدي (لو كان كله أرقام)
+            return true;
+          });
+          var detailedAddress = cleanAddrParts.join('، ');
+          if (!detailedAddress) detailedAddress = 'لم يُحدد بعد';
+
           processSave(lat, lng, regionName, detailedAddress);
         })
         .catch(function() {
@@ -889,7 +916,6 @@
       setSaving(false);
     }, { enableHighAccuracy: true, timeout: 10000 });
 
-    // ✅ تم تعديل الدالة عشان تستقبل وتشيل الـ detailedAddress للباك إند
     function processSave(lat, lng, regionName, detailedAddress) {
       if (isNew) {
         var name = el.newName.value.trim();
