@@ -507,8 +507,8 @@
   'use strict';
 
   // ✅ تم تحديث رابط الـ Apps Script الجديد
-  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyry2k0RpuZxxkApdKZe-WfA5abJRXYA1xrLbVMGldRSevw5MFL3d4fDIiGrVEoDS3k/exec';
-  var BUILD_TAG = 'v9';
+  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxeJbXa3qA-uEWXhEm-D9Mq4hW3IKcu5qQlCb-xsUou8DY-slfVOmva-oQZazfzLgc/exec';
+  var BUILD_TAG = 'v10';
 
   var state = {
     allClients: [],
@@ -867,6 +867,28 @@
       var lat = position.coords.latitude;
       var lng = position.coords.longitude;
 
+      // 1. الموبايل بيسأل عن اسم المنطقة من الإنترنت مباشرة
+      var regionUrl = 'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lng + '&localityLanguage=ar';
+      
+      fetch(regionUrl)
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          var regionName = data.locality || data.city || data.principalSubdivision || 'موقع غير محدد';
+          // 2. بنبعت الاسم للدالة اللي بتعمل الحفظ
+          processSave(lat, lng, regionName);
+        })
+        .catch(function() {
+          // لو الـ API وقع، نكمل حفظ باسم افتراضي عشان الزيارة ماتضيعش
+          processSave(lat, lng, 'موقع غير محدد');
+        });
+
+    }, function () {
+      showToast('لازم توافق على مشاركة الموقع عشان يتحفظ', 'error');
+      setSaving(false);
+    }, { enableHighAccuracy: true, timeout: 10000 });
+
+    // دالة عشان ن组织和 الحفظ بعد ما نعرف المنطقة
+    function processSave(lat, lng, regionName) {
       if (isNew) {
         var name = el.newName.value.trim();
         var category = el.newCategory.value;
@@ -877,7 +899,8 @@
           .then(function () {
             return callApi('saveVisit', {
               name: name, status: state.selectedStatus, lat: lat, lng: lng,
-              reason: reason, phone: phone, category: category, invoiceValue: invoiceValue
+              reason: reason, phone: phone, category: category, invoiceValue: invoiceValue,
+              region: regionName // <--- بنبعت اسم المنطقة هنا
             });
           })
           .then(function (json) { finishSave(json.message); })
@@ -896,16 +919,14 @@
           .then(function () {
             return callApi('saveVisit', {
               name: finalName, status: state.selectedStatus, lat: lat, lng: lng,
-              reason: reason, phone: exPhone, category: exCategory, invoiceValue: invoiceValue
+              reason: reason, phone: exPhone, category: exCategory, invoiceValue: invoiceValue,
+              region: regionName // <--- بنبعت اسم المنطقة هنا
             });
           })
           .then(function (json) { finishSave(json.message); })
           .catch(saveFailed);
       }
-    }, function () {
-      showToast('لازم توافق على مشاركة الموقع عشان يتحفظ', 'error');
-      setSaving(false);
-    }, { enableHighAccuracy: true, timeout: 10000 });
+    }
   }
 
   function bindEvents() {
