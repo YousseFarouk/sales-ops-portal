@@ -214,12 +214,6 @@
     flex:1;font-size:14.5px;font-weight:600;color:var(--text);
   }
   .region-row .region-text.empty{color:var(--text-mute);font-weight:500;}
-  #refreshRegionBtn{
-    border:none;background:var(--primary-light);color:var(--primary);
-    padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:700;
-    cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;
-  }
-  #refreshRegionBtn:disabled{opacity:0.6;cursor:not-allowed;}
 
   .invoice-summary-row{
     display:flex;gap:10px;margin-bottom:12px;
@@ -398,8 +392,7 @@
       <div class="hint">✏️ تقدر تعدل أي بيانات هنا (حتى الاسم) — هتتحدث تلقائيًا عند الحفظ</div>
 
       <div class="region-row">
-        <span class="region-text empty" id="regionText">المنطقة: هتتحدد أول ما تحفظ الزيارة من موقعك الحالي</span>
-        <button type="button" id="refreshRegionBtn">📍 تحديث المنطقة</button>
+        <span class="region-text empty" id="regionText">📍 المنطقة: هتتحدد تلقائيًا عند حفظ الزيارة من موقعك</span>
       </div>
 
       <div class="invoice-summary-row">
@@ -513,8 +506,9 @@
 (function () {
   'use strict';
 
-  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7SPJkcu119q0Eny4F9U2AKVMNw51cW6QKeC2eriWzcljW5j8ewFigTzDrhmutDT7E/exec';
-  var BUILD_TAG = 'v8';
+  // ✅ تم تحديث رابط الـ Apps Script الجديد
+  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwq8Jrcb8G01bOlO2jcCBSpla0nqmGzv3QPN6ZF7Dc_AulQ7THC8cdPM610-fVwoymE/exec';
+  var BUILD_TAG = 'v9';
 
   var state = {
     allClients: [],
@@ -549,7 +543,6 @@
     el.infoPhoneErr = document.getElementById('infoPhoneErr');
 
     el.regionText = document.getElementById('regionText');
-    el.refreshRegionBtn = document.getElementById('refreshRegionBtn');
 
     el.lastInvoiceVal = document.getElementById('lastInvoiceVal');
     el.totalInvoicesVal = document.getElementById('totalInvoicesVal');
@@ -696,7 +689,7 @@
       el.regionText.textContent = '📍 المنطقة: ' + region;
       el.regionText.classList.remove('empty');
     } else {
-      el.regionText.textContent = 'المنطقة: هتتحدد أول ما تحفظ الزيارة من موقعك الحالي';
+      el.regionText.textContent = '📍 المنطقة: هتتحدد تلقائيًا عند حفظ الزيارة من موقعك';
       el.regionText.classList.add('empty');
     }
   }
@@ -758,41 +751,6 @@
     el.newClientBox.style.display = 'none';
     el.loadingRow.style.display = 'none';
     el.searchInput.value = '';
-  }
-
-  function refreshRegionNow() {
-    if (!state.originalClientName) return;
-    if (!navigator.geolocation) {
-      showToast('الموبايل ده مش بيدعم تحديد الموقع', 'error');
-      return;
-    }
-    el.refreshRegionBtn.disabled = true;
-    el.refreshRegionBtn.textContent = '⏳ جاري التحديد...';
-
-    navigator.geolocation.getCurrentPosition(function (position) {
-      callApi('refreshRegion', {
-        name: state.originalClientName,
-        lat: position.coords.latitude,
-        lng: position.coords.longitude
-      }).then(function (json) {
-        var region = json.data ? json.data.region : '';
-        if (region) {
-          renderRegion(region);
-          showToast('تم تحديث المنطقة ✅', 'success');
-        } else {
-          showToast('تعذر تحديد المنطقة، جرب تاني', 'error');
-        }
-      }).catch(function (err) {
-        showToast('حصل خطأ: ' + err.message, 'error');
-      }).then(function () {
-        el.refreshRegionBtn.disabled = false;
-        el.refreshRegionBtn.textContent = '📍 تحديث المنطقة';
-      });
-    }, function () {
-      showToast('لازم توافق على مشاركة الموقع', 'error');
-      el.refreshRegionBtn.disabled = false;
-      el.refreshRegionBtn.textContent = '📍 تحديث المنطقة';
-    }, { enableHighAccuracy: true, timeout: 10000 });
   }
 
   function chooseStatus(status) {
@@ -955,7 +913,6 @@
     el.searchInput.addEventListener('focus', renderSuggestions);
     el.clearSearch.addEventListener('click', clearClient);
     el.clearChipBtn.addEventListener('click', clearClient);
-    el.refreshRegionBtn.addEventListener('click', refreshRegionNow);
 
     document.addEventListener('click', function (e) {
       if (!e.target.closest('.search-wrap')) hideSuggestions();
