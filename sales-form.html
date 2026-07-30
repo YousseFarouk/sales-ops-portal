@@ -509,7 +509,7 @@
   'use strict';
 
   var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzxd5-KcUJUdkxu_ez9xZBKvRosOEDQcxpSdcel9U0ruK-2-beinjWzbBH8Pzq3tIz_/exec';
-  var BUILD_TAG = 'v15'; // <--- تم إصلاح رابط ArcGIS الخاطئ
+  var BUILD_TAG = 'v16'; // <--- تم إصلاح استخراج المنطقة (District بدل City)
 
   var state = {
     allClients: [],
@@ -587,6 +587,19 @@
   function fmtMoney(v) {
     var n = parseFloat(v) || 0;
     return n.toLocaleString('ar-EG') + ' ج';
+  }
+
+  // بتحاول تلقط اسم المنطقة (زي سيدي بشر) من نص العنوان التفصيلي نفسه
+  // لو حقول District/Neighborhood رجعت فاضية من ArcGIS
+  function extractRegionFromMatchAddr(matchAddr, city) {
+    if (!matchAddr) return '';
+    var parts = matchAddr.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    parts = parts.filter(function (p) {
+      return p !== city && !/egypt/i.test(p) && p !== 'مصر';
+    });
+    // بعد شيل المدينة والدولة، أول جزء هو الشارع وتاني جزء (لو موجود) هو المنطقة غالبًا
+    if (parts.length >= 2) return parts[1];
+    return '';
   }
 
   function setFieldError(inputEl, errEl, show) {
@@ -884,8 +897,16 @@
 
           var addr = data.address;
 
-          // 1. استخراج المنطقة (الحي الفرعي أو المدينة)
-          var regionName = addr.Neighborhood || addr.Subregion || addr.City || 'موقع غير محدد';
+          // 1. استخراج المنطقة (زي سيدي بشر / سموحة / السيوف) — District هو الحقل الصح لده في مصر،
+          //    مش City (اللي دايمًا بيرجع اسم المدينة كلها "الإسكندرية")
+          var regionName = addr.District || addr.Neighborhood;
+          if (!regionName) {
+            // احتياطي: لو الحقول فاضية، نحاول نلقط اسم المنطقة من جوه العنوان التفصيلي نفسه
+            regionName = extractRegionFromMatchAddr(addr.Match_addr, addr.City);
+          }
+          if (!regionName) {
+            regionName = addr.Subregion || addr.City || 'موقع غير محدد';
+          }
 
           // 2. استخراج العنوان التفصيلي (Match_addr) وتنظيفه من كلمة "مصر"
           var detailedAddress = addr.Match_addr || 'لم يُحدد بعد';
