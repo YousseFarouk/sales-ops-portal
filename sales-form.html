@@ -509,7 +509,7 @@
   'use strict';
 
   var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzxd5-KcUJUdkxu_ez9xZBKvRosOEDQcxpSdcel9U0ruK-2-beinjWzbBH8Pzq3tIz_/exec';
-  var BUILD_TAG = 'v16'; // <--- تم إصلاح استخراج المنطقة (District بدل City)
+  var BUILD_TAG = 'v17'; // <--- إصلاح: اسم الشارع الحقيقي بدل اسم المكان (POI) + ترتيب أدق للمنطقة
 
   var state = {
     allClients: [],
@@ -897,9 +897,10 @@
 
           var addr = data.address;
 
-          // 1. استخراج المنطقة (زي سيدي بشر / سموحة / السيوف) — District هو الحقل الصح لده في مصر،
-          //    مش City (اللي دايمًا بيرجع اسم المدينة كلها "الإسكندرية")
-          var regionName = addr.District || addr.Neighborhood;
+          // 1. استخراج المنطقة (زي سيدي بشر قبلي / سموحة / السيوف)
+          //    Neighborhood هو الأدق (منطقة فرعية صغيرة)، District أوسع منه (قسم إداري كبير زي "قسم المنتزه")
+          //    فلازم نجرب Neighborhood الأول، ونستخدم District بس لو معندناش حاجة أدق
+          var regionName = addr.Neighborhood || addr.District;
           if (!regionName) {
             // احتياطي: لو الحقول فاضية، نحاول نلقط اسم المنطقة من جوه العنوان التفصيلي نفسه
             regionName = extractRegionFromMatchAddr(addr.Match_addr, addr.City);
@@ -908,15 +909,25 @@
             regionName = addr.Subregion || addr.City || 'موقع غير محدد';
           }
 
-          // 2. استخراج العنوان التفصيلي (Match_addr) وتنظيفه من كلمة "مصر"
-          var detailedAddress = addr.Match_addr || 'لم يُحدد بعد';
-          detailedAddress = detailedAddress
-            .replace(/,?\s*Egypt\s*,?/gi, ', ')
-            .replace(/,?\s*مصر\s*,?/g, ', ')
-            .replace(/\s*,\s*,+\s*/g, ', ')   // دمج أي فواصل متكررة ناتجة عن الحذف
-            .replace(/^\s*,\s*/, '')          // إزالة فاصلة زيادة في الأول
-            .replace(/\s*,\s*$/, '')          // إزالة فاصلة زيادة في الآخر
-            .trim();
+          // 2. استخراج اسم الشارع الفعلي — لازم نستخدم حقل Address مش Match_addr،
+          //    لأن Match_addr أحيانًا بيرجع اسم مكان/معلم (POI) زي "النخيل" بدل اسم الشارع الحقيقي.
+          //    حقل Address بيفضل فيه اسم الشارع الصحيح حتى لو الماتش كان POI.
+          var streetPart = addr.Address || '';
+          var detailedAddress;
+
+          if (streetPart) {
+            detailedAddress = [streetPart, regionName, addr.City].filter(Boolean).join('، ');
+          } else {
+            // احتياطي: مفيش حقل شارع منفصل، نستخدم النص الكامل بعد التنظيف من الدولة
+            detailedAddress = addr.Match_addr || '';
+            detailedAddress = detailedAddress
+              .replace(/,?\s*Egypt\s*,?/gi, ', ')
+              .replace(/,?\s*مصر\s*,?/g, ', ')
+              .replace(/\s*,\s*,+\s*/g, ', ')   // دمج أي فواصل متكررة ناتجة عن الحذف
+              .replace(/^\s*,\s*/, '')          // إزالة فاصلة زيادة في الأول
+              .replace(/\s*,\s*$/, '')          // إزالة فاصلة زيادة في الآخر
+              .trim();
+          }
           if (!detailedAddress) detailedAddress = 'لم يُحدد بعد';
 
           processSave(lat, lng, regionName, detailedAddress);
