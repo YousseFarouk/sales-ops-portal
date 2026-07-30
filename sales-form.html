@@ -509,7 +509,7 @@
   'use strict';
 
   var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzxd5-KcUJUdkxu_ez9xZBKvRosOEDQcxpSdcel9U0ruK-2-beinjWzbBH8Pzq3tIz_/exec';
-  var BUILD_TAG = 'v14'; // <--- تم تحديث الإصدار لاستخدام ArcGIS
+  var BUILD_TAG = 'v15'; // <--- تم إصلاح رابط ArcGIS الخاطئ
 
   var state = {
     allClients: [],
@@ -868,25 +868,34 @@
       var lat = position.coords.latitude;
       var lng = position.coords.longitude;
 
-      // ✅ استخدام ArcGIS API لأقوى دقة في مصر
-      var regionUrl = 'https://geocode.arcgis.com/geocode/reverseGeocode?location=' + lng + ',' + lat + '&f=json&langCode=ar';
-      
+      // ✅ الرابط الصحيح لخدمة ArcGIS World Geocoding (مجاني، من غير API key)
+      var regionUrl = 'https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/reverseGeocode?location=' + lng + ',' + lat + '&f=json&langCode=ar&outSR=4326';
+
       fetch(regionUrl)
-        .then(function(res) { return res.json(); })
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
         .then(function(data) {
           if (!data || !data.address) {
             processSave(lat, lng, 'موقع غير محدد', 'لم يُحدد بعد');
             return;
           }
-          
+
           var addr = data.address;
-          
+
           // 1. استخراج المنطقة (الحي الفرعي أو المدينة)
           var regionName = addr.Neighborhood || addr.Subregion || addr.City || 'موقع غير محدد';
-          
+
           // 2. استخراج العنوان التفصيلي (Match_addr) وتنظيفه من كلمة "مصر"
           var detailedAddress = addr.Match_addr || 'لم يُحدد بعد';
-          detailedAddress = detailedAddress.replace(/,?\s*Egypt\s*,?/gi, '').replace(/,?\s*مصر\s*,?/g, '').trim();
+          detailedAddress = detailedAddress
+            .replace(/,?\s*Egypt\s*,?/gi, ', ')
+            .replace(/,?\s*مصر\s*,?/g, ', ')
+            .replace(/\s*,\s*,+\s*/g, ', ')   // دمج أي فواصل متكررة ناتجة عن الحذف
+            .replace(/^\s*,\s*/, '')          // إزالة فاصلة زيادة في الأول
+            .replace(/\s*,\s*$/, '')          // إزالة فاصلة زيادة في الآخر
+            .trim();
           if (!detailedAddress) detailedAddress = 'لم يُحدد بعد';
 
           processSave(lat, lng, regionName, detailedAddress);
