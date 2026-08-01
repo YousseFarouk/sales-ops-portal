@@ -508,6 +508,8 @@
 (function () {
   'use strict';
 
+  // 🔒 لازم يكون نفس القيمة بالظبط اللي حطيتها في API_SECRET في الـ Code.gs
+  var API_KEY = 'CHANGE_ME_TO_A_RANDOM_SECRET';
   var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxN05yuGYMmiWHXgEcqqV5UsGp2ia6kbnrdv-HEw2oQURr6xFNcISiBqNWNsDBReLKv/exec';
   var BUILD_TAG = 'v17'; // <--- إصلاح: اسم الشارع الحقيقي بدل اسم المكان (POI) + ترتيب أدق للمنطقة
 
@@ -622,7 +624,7 @@
   }
 
   function callApi(action, params) {
-    var url = APPS_SCRIPT_URL + '?action=' + encodeURIComponent(action);
+    var url = APPS_SCRIPT_URL + '?action=' + encodeURIComponent(action) + '&key=' + encodeURIComponent(API_KEY);
     for (var key in (params || {})) {
       url += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(params[key] == null ? '' : params[key]);
     }
