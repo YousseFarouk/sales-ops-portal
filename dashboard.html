@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>لوحة التحكم - الزيارات</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -23,7 +24,7 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-  
+
   .header {
     background: linear-gradient(135deg, var(--primary), #163a59);
     color: #fff; padding: 20px 30px; display: flex; justify-content: space-between; align-items: flex-start;
@@ -31,11 +32,11 @@
   }
   .header-left { display: flex; flex-direction: column; gap: 12px; }
   .header h1 { font-size: 1.4rem; display: flex; align-items: center; gap: 10px; }
-  
+
   .view-toggle { display: flex; background: rgba(255,255,255,0.15); border-radius: 10px; overflow: hidden; width: fit-content; }
   .toggle-btn { background: transparent; border: none; color: #fff; padding: 8px 20px; cursor: pointer; font-family: inherit; font-weight: 700; font-size: 0.9rem; transition: 0.2s; }
   .toggle-btn.active { background: #fff; color: var(--primary); }
-  
+
   .filters { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
   .filters label { font-size: 0.85rem; font-weight: 600; opacity: 0.9; display: flex; flex-direction: column; }
   .filters input[type="date"] {
@@ -43,34 +44,40 @@
     color: #fff; padding: 8px 12px; border-radius: 8px; font-family: inherit; cursor: pointer; margin-top: 5px;
   }
   .btn-export { background: #2e7d32; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-family: inherit; font-weight: 700; cursor: pointer; font-size: 0.9rem; height: fit-content; }
-  
+
   .container { max-width: 1400px; margin: 0 auto; padding: 25px; }
-  
+
   .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }
-  .kpi-card { background: var(--card); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); border-right: 5px solid var(--primary); transition: transform 0.2s; }
+  .kpi-card { background: var(--card); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); border-right: 5px solid var(--primary); transition: transform 0.2s, box-shadow 0.2s; }
   .kpi-card:hover { transform: translateY(-3px); }
+  .kpi-card.clickable { cursor: pointer; }
+  .kpi-card.clickable:hover { box-shadow: 0 8px 24px rgba(20,30,50,0.14); }
+  .kpi-card.active-drill { outline: 2.5px solid var(--primary); }
   .kpi-card.done { border-color: var(--accent); } .kpi-card.done .icon { background: var(--accent-light); color: var(--accent); }
   .kpi-card.notdone { border-color: var(--danger); } .kpi-card.notdone .icon { background: var(--danger-light); color: var(--danger); }
   .kpi-card.remaining { border-color: var(--warn); } .kpi-card.remaining .icon { background: var(--warn-light); color: var(--warn); }
   .kpi-card.rate { border-color: var(--primary); } .kpi-card.rate .icon { background: var(--primary-light); color: var(--primary); }
   .kpi-card .icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 10px; }
   .kpi-card .label { font-size: 0.85rem; color: var(--text-mute); margin-bottom: 5px; }
+  .kpi-card .label .sub { display: block; font-size: 0.72rem; color: #a3adba; font-weight: 600; margin-top: 2px; }
   .kpi-card .value { font-size: 1.8rem; font-weight: 800; }
-  
+  .kpi-card .value .rate-note { font-size: 0.7rem; color: var(--text-mute); font-weight: 600; display: block; margin-top: 3px; }
+  .kpi-card .tap-hint { font-size: 0.7rem; color: var(--primary); font-weight: 700; margin-top: 6px; }
+
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px; }
   .grid-2.map-grid { grid-template-columns: 1.5fr 1fr; }
   @media (max-width: 992px) { .grid-2, .grid-2.map-grid { grid-template-columns: 1fr; } }
-  
+
   .card { background: var(--card); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 25px; }
   .card h3 { font-size: 1.1rem; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; color: var(--primary); justify-content: space-between; }
   .card h3 .left { display: flex; align-items: center; gap: 8px; }
-  
+
   .map-controls { display: flex; gap: 10px; margin-bottom: 10px; }
   .map-btn { padding: 6px 12px; border: 1px solid var(--border); background: var(--bg); border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: 600; font-size: 0.85rem; }
   .map-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-  
+
   #map { height: 400px; border-radius: 12px; z-index: 1; }
-  
+
   table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   th { text-align: right; padding: 12px 10px; border-bottom: 2px solid var(--border); color: var(--text-mute); font-size: 0.8rem; }
   td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
@@ -78,22 +85,45 @@
   .badge.money { background: var(--accent-light); color: var(--accent); }
   .badge.done { background: var(--accent); color: #fff; }
   .badge.pending { background: var(--warn-light); color: var(--warn); }
-  
+
   .btn-link { background: none; border: none; color: var(--primary); cursor: pointer; font-family: inherit; font-weight: 700; font-size: 0.9rem; text-decoration: underline; margin-top: 10px; display: block; width: 100%; text-align: center; }
-  
+
   .list-group { max-height: 350px; overflow-y: auto; }
   .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
-  
+
+  /* ===== Drill-down panel ===== */
+  #drillDownCard { display: none; }
+  #drillDownCard .dd-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  #drillDownCard .dd-title { font-size: 1.05rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+  #drillDownCard .dd-count { background: var(--primary-light); color: var(--primary); padding: 2px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+  #drillDownCard .dd-scope-note { font-size: 0.8rem; color: var(--text-mute); margin-bottom: 14px; }
+  #drillDownCard .dd-close { background: none; border: none; font-size: 1.3rem; color: var(--text-mute); cursor: pointer; line-height: 1; }
+  .dd-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .dd-table thead th { border-bottom: 2px solid var(--border); color: var(--text-mute); text-align: right; padding: 10px 8px; font-size: 0.78rem; }
+  .dd-table tbody tr { border-bottom: none; }
+  .dd-table tbody tr:hover { background: var(--bg); }
+  .dd-table td { border-bottom: none; padding: 10px 8px; }
+  .dd-table a.dd-name-link { color: var(--primary); font-weight: 700; text-decoration: none; border-bottom: 1px dashed var(--primary); }
+  .dd-table a.dd-name-link:hover { border-bottom: 1px solid var(--primary); }
+  .dd-table .dd-name-plain { font-weight: 700; }
+  .dd-table .dd-empty { text-align: center; color: var(--text-mute); padding: 24px; }
+  .dd-scroll { max-height: 420px; overflow-y: auto; }
+
   #loadingOverlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
   .spinner { width: 50px; height: 50px; border: 5px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  #loadErrorBox { display:none; text-align:center; }
+  #loadErrorBox button { margin-top: 12px; background: var(--primary); color:#fff; border:none; padding:10px 20px; border-radius:8px; font-family:inherit; font-weight:700; cursor:pointer; }
 </style>
 </head>
 <body>
 
 <div id="loadingOverlay">
-  <div class="spinner"></div>
-  <p style="margin-top: 15px; font-weight: 700; color: var(--primary);">جاري تحميل البيانات...</p>
+  <div class="spinner" id="loadSpinner"></div>
+  <p style="margin-top: 15px; font-weight: 700; color: var(--primary);" id="loadingText">جاري تحميل البيانات...</p>
+  <div id="loadErrorBox">
+    <button onclick="location.reload()">إعادة المحاولة</button>
+  </div>
 </div>
 
 <div class="header">
@@ -113,11 +143,37 @@
 
 <div class="container">
   <div class="kpi-grid">
-    <div class="kpi-card done"><div class="icon">✅</div><div class="label">تمت بنجاح</div><div class="value" id="kpiDone">0</div></div>
-    <div class="kpi-card notdone"><div class="icon">❌</div><div class="label">لم تتم</div><div class="value" id="kpiNotDone">0</div></div>
-    <div class="kpi-card remaining"><div class="icon">⏳</div><div class="label">المتبقي اليوم</div><div class="value" id="kpiRemaining">0</div></div>
-    <div class="kpi-card rate"><div class="icon">📈</div><div class="label">نسبة الإنجاز</div><div class="value" id="kpiRate">0%</div></div>
+    <div class="kpi-card done clickable" id="cardDone" onclick="toggleDrillDown('done')">
+      <div class="icon">✅</div><div class="label">تمت بنجاح</div><div class="value" id="kpiDone">0</div>
+      <div class="tap-hint">اضغط لعرض التفاصيل</div>
+    </div>
+    <div class="kpi-card notdone clickable" id="cardNotDone" onclick="toggleDrillDown('notdone')">
+      <div class="icon">❌</div><div class="label">لم تتم</div><div class="value" id="kpiNotDone">0</div>
+      <div class="tap-hint">اضغط لعرض التفاصيل</div>
+    </div>
+    <div class="kpi-card remaining clickable" id="cardRemaining" onclick="toggleDrillDown('remaining')">
+      <div class="icon">⏳</div><div class="label">المتبقي<span class="sub" id="remainingScopeLabel">كل الوقت</span></div><div class="value" id="kpiRemaining">0</div>
+      <div class="tap-hint">اضغط لعرض التفاصيل</div>
+    </div>
+    <div class="kpi-card rate">
+      <div class="icon">📈</div><div class="label">نسبة الإنجاز</div>
+      <div class="value" id="kpiRate">0%<span class="rate-note" id="kpiRateNote"></span></div>
+    </div>
     <div class="kpi-card" style="border-color: #6b7684;"><div class="icon" style="background: #f0f2f5; color: #6b7684;">💰</div><div class="label">متوسط الفاتورة</div><div class="value" id="kpiAvgInvoice">0 ج</div></div>
+  </div>
+
+  <div class="card" id="drillDownCard">
+    <div class="dd-header">
+      <div class="dd-title"><span id="ddTitleIcon">✅</span> <span id="ddTitleText">تمت بنجاح</span> <span class="dd-count" id="ddCount">0</span></div>
+      <button class="dd-close" onclick="closeDrillDown()">✕</button>
+    </div>
+    <div class="dd-scope-note" id="ddScopeNote"></div>
+    <div class="dd-scroll">
+      <table class="dd-table">
+        <thead><tr><th>الاسم</th><th>التليفون</th><th>المنطقة / العنوان</th><th>آخر فاتورة</th><th>مجموع الفواتير</th></tr></thead>
+        <tbody id="ddTableBody"></tbody>
+      </table>
+    </div>
   </div>
 
   <div class="grid-2 map-grid">
@@ -155,7 +211,7 @@
       <canvas id="regionChart" height="120"></canvas>
     </div>
     <div class="card">
-      <h3><span class="left">🏆 الأكثر سحباً / 💭 أسباب عدم الإتمام</span></h3>
+      <h3><span class="left">🏆 الأكثر شراءً / 💭 أسباب عدم الإتمام</span></h3>
       <div style="display:flex; gap:20px; flex-wrap:wrap;">
         <div style="flex:1; min-width:200px;"><h4 style="margin-bottom:10px;">العملاء</h4><div class="list-group" id="topClientsList"></div></div>
         <div style="flex:1; min-width:200px;"><h4 style="margin-bottom:10px;">الأسباب</h4><div class="list-group" id="reasonsList"></div></div>
@@ -165,11 +221,36 @@
 </div>
 
 <script>
-  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxC8z__7_d3O0Ox6CH50oxfIfmarPxI_f184vILNmyopiXh_ZvjtQ6EPtxGhj_3HU-H/exec';
+  // 🔒 لازم يكون نفس القيمة بالظبط اللي حطيتها في API_SECRET في الـ Code.gs
+  var API_KEY = 'CHANGE_ME_TO_A_RANDOM_SECRET';
+  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyh6ZGNbPTiJz_im01UxYBbueVZoSl0Uv49D94z9SYuAxMAjvt-wT1mK4n4uBhVo1k/exec';
+
+  var DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
   var rawData = null;
   var map = null, heatLayer = null, markerLayer = null, currentMapMode = 'heat';
   var visitsChartObj = null, rateChartObj = null, regionChartObj = null;
   var showAllRoute = false;
+  var activeDrillDown = null; // 'done' | 'notdone' | 'remaining' | null
+
+  // ===== أدوات التاريخ (بتاخد التاريخ المحلي مش UTC، عشان تتجنب مشكلة فروق التوقيت) =====
+  function toLocalDateStr(d) {
+    d = new Date(d);
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  }
+  function weekdayNameOf(dateStr) {
+    // بنستخدم الساعة 12 ظهرًا عشان نتجنب أي مشاكل تحويل توقيت وقت التحليل
+    var d = new Date(dateStr + 'T12:00:00');
+    return DAY_NAMES[d.getDay()];
+  }
+  function addDaysStr(dateStr, n) {
+    var d = new Date(dateStr + 'T12:00:00');
+    d.setDate(d.getDate() + n);
+    return toLocalDateStr(d);
+  }
 
   function initMap() {
     map = L.map('map').setView([31.2001, 29.9187], 12);
@@ -178,14 +259,17 @@
   }
 
   function callApi(action) {
-    return fetch(APPS_SCRIPT_URL + '?action=' + action + '&t=' + new Date().getTime()).then(res => res.json());
+    return fetch(APPS_SCRIPT_URL + '?action=' + action + '&key=' + encodeURIComponent(API_KEY) + '&t=' + new Date().getTime())
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      });
   }
 
   function setView(view) {
-    showAllRoute = false; // تصفير المتغير كل ما نغير الفيو
+    showAllRoute = false;
     if (view === 'today') {
-      var today = new Date();
-      var todayStr = today.toISOString().split('T')[0];
+      var todayStr = toLocalDateStr(new Date());
       document.getElementById('startDate').value = todayStr;
       document.getElementById('endDate').value = todayStr;
       document.getElementById('btnToday').classList.add('active');
@@ -196,34 +280,27 @@
       document.getElementById('btnAll').classList.add('active');
       document.getElementById('btnToday').classList.remove('active');
     }
-    renderChartsAndMap();
-    renderRouteTable(); // تحديث جدول خط السير
+    renderChartsAndMap(true);
+    renderRouteTable();
+    if (activeDrillDown) renderDrillDown(activeDrillDown);
   }
 
   function renderDashboard() {
-    var data = rawData;
-    document.getElementById('kpiRemaining').textContent = data.kpis.remainingToday;
-    
-    document.getElementById('topClientsList').innerHTML = data.topClients.map(c => `<div class="list-item"><span>${c.name}</span><span class="badge money">${c.totalInvoices.toLocaleString('ar-EG')} ج</span></div>`).join('') || 'لا يوجد';
-    document.getElementById('reasonsList').innerHTML = data.topReasons.map(r => `<div class="list-item"><span>${r.reason}</span><span class="badge" style="background:#fdeded;color:#c62828;">${r.count}</span></div>`).join('') || 'لا يوجد';
-
     renderRouteTable();
-    renderChartsAndMap();
+    renderChartsAndMap(true);
   }
 
   function renderRouteTable() {
     var route = rawData.todayRoute;
     var limit = showAllRoute ? route.length : 5;
-    var html = route.slice(0, limit).map(c => `
-      <tr>
-        <td>${c.name}</td>
-        <td>${c.visited ? `<span class="badge done">تمت ✅</span>` : `<span class="badge pending">معلق ⏳</span>`}</td>
-        <td>${c.invoice > 0 ? c.invoice.toLocaleString('ar-EG') + ' ج' : '-'}</td>
-      </tr>
-    `).join('') || '<tr><td colspan="3">لا يوجد عملاء اليوم</td></tr>';
+    var html = route.slice(0, limit).map(function (c) {
+      return '<tr><td>' + c.name + '</td><td>' +
+        (c.visited ? '<span class="badge done">تمت ✅</span>' : '<span class="badge pending">معلق ⏳</span>') +
+        '</td><td>' + (c.invoice > 0 ? c.invoice.toLocaleString('ar-EG') + ' ج' : '-') + '</td></tr>';
+    }).join('') || '<tr><td colspan="3">لا يوجد عملاء اليوم</td></tr>';
 
     if (route.length > 5 && !showAllRoute) {
-      html += `<tr><td colspan="3"><button class="btn-link" onclick="showMoreRoute()">عرض المزيد (${route.length - 5})</button></td></tr>`;
+      html += '<tr><td colspan="3"><button class="btn-link" onclick="showMoreRoute()">عرض المزيد (' + (route.length - 5) + ')</button></td></tr>';
     }
     document.getElementById('routeTableBody').innerHTML = html;
   }
@@ -233,43 +310,201 @@
     renderRouteTable();
   }
 
-  function renderChartsAndMap() {
+  // يرجع filteredVisits + معلومات عن نطاق الفلتر الحالي
+  function getFilteredVisits() {
     var startDateStr = document.getElementById('startDate').value;
     var endDateStr = document.getElementById('endDate').value;
-    
-    var filteredVisits = rawData.allVisits.filter(v => {
+    var filtered = rawData.allVisits.filter(function (v) {
       if (!v.date) return false;
-      var d = new Date(v.date);
-      if (startDateStr && d < new Date(startDateStr)) return false;
-      if (endDateStr && d > new Date(endDateStr + 'T23:59:59')) return false;
+      var vDay = toLocalDateStr(v.date);
+      if (startDateStr && vDay < startDateStr) return false;
+      if (endDateStr && vDay > endDateStr) return false;
       return true;
     });
+    return { visits: filtered, startDateStr: startDateStr, endDateStr: endDateStr };
+  }
 
-    var done = filteredVisits.filter(v => v.status === 'نعم').length;
-    var notDone = filteredVisits.filter(v => v.status === 'لا').length;
-    var totalInvoices = filteredVisits.reduce((s, v) => s + v.invoice, 0);
+  // بيحدد وضع "المتبقي" الحالي: all / single / range / partial
+  function getRemainingMode(startDateStr, endDateStr) {
+    if (!startDateStr && !endDateStr) return 'all';
+    if (startDateStr && endDateStr && startDateStr === endDateStr) return 'single';
+    if (startDateStr && endDateStr && startDateStr !== endDateStr) return 'range';
+    return 'partial'; // اتحدد بس تاريخ واحد من الاتنين
+  }
+
+  // خريطة رقم تليفون -> بيانات العميل من allClients
+  function buildClientsByPhone() {
+    var map = {};
+    (rawData.allClients || []).forEach(function (c) {
+      var p = (c.phone || '').replace(/\s+/g, '');
+      if (p) map[p] = c;
+    });
+    return map;
+  }
+
+  // بيحسب قائمة "المتبقي" (كائنات عملاء) حسب الوضع الحالي
+  function computeRemainingList(mode, startDateStr, endDateStr) {
+    var allClients = rawData.allClients || [];
+    var allVisitsEver = rawData.allVisits;
+
+    if (mode === 'all' || mode === 'partial') {
+      var everVisitedPhones = {};
+      allVisitsEver.forEach(function (v) { if (v.phone) everVisitedPhones[v.phone.replace(/\s+/g,'')] = true; });
+      return allClients.filter(function (c) {
+        var p = (c.phone || '').replace(/\s+/g, '');
+        return !everVisitedPhones[p];
+      });
+    }
+
+    if (mode === 'single') {
+      var weekday = weekdayNameOf(startDateStr);
+      var scheduled = allClients.filter(function (c) { return c.day === weekday; });
+      var visitedPhonesThatDay = {};
+      allVisitsEver.forEach(function (v) {
+        if (v.date && toLocalDateStr(v.date) === startDateStr && v.phone) {
+          visitedPhonesThatDay[v.phone.replace(/\s+/g,'')] = true;
+        }
+      });
+      return scheduled.filter(function (c) {
+        var p = (c.phone || '').replace(/\s+/g, '');
+        return !visitedPhonesThatDay[p];
+      });
+    }
+
+    if (mode === 'range') {
+      // خيار (أ): سطر واحد لكل عميل لو فاته يوم واحد على الأقل من مواعيده داخل المدى
+      var missedPhones = {};
+      var cursor = startDateStr;
+      var guard = 0;
+      while (cursor <= endDateStr && guard < 366) { // حد أقصى أمان (سنة) عشان منعملش لوب لا نهائي
+        var wd = weekdayNameOf(cursor);
+        var scheduledThatDay = allClients.filter(function (c) { return c.day === wd; });
+        var visitedPhonesThatDay = {};
+        allVisitsEver.forEach(function (v) {
+          if (v.date && toLocalDateStr(v.date) === cursor && v.phone) {
+            visitedPhonesThatDay[v.phone.replace(/\s+/g,'')] = true;
+          }
+        });
+        scheduledThatDay.forEach(function (c) {
+          var p = (c.phone || '').replace(/\s+/g, '');
+          if (p && !visitedPhonesThatDay[p]) missedPhones[p] = true;
+        });
+        cursor = addDaysStr(cursor, 1);
+        guard++;
+      }
+      return allClients.filter(function (c) {
+        var p = (c.phone || '').replace(/\s+/g, '');
+        return missedPhones[p];
+      });
+    }
+
+    return [];
+  }
+
+  function renderDashboardKPIs() {
+    var f = getFilteredVisits();
+    var filteredVisits = f.visits, startDateStr = f.startDateStr, endDateStr = f.endDateStr;
+
+    var done = filteredVisits.filter(function (v) { return v.status === 'نعم'; }).length;
+    var notDone = filteredVisits.filter(function (v) { return v.status === 'لا'; }).length;
+    var totalInvoices = filteredVisits.reduce(function (s, v) { return s + v.invoice; }, 0);
     var avgInv = done > 0 ? totalInvoices / done : 0;
-    
+
     document.getElementById('kpiDone').textContent = done;
     document.getElementById('kpiNotDone').textContent = notDone;
-    document.getElementById('kpiRate').textContent = filteredVisits.length > 0 ? Math.round((done / filteredVisits.length) * 100) + '%' : '0%';
     document.getElementById('kpiAvgInvoice').textContent = Math.round(avgInv).toLocaleString('ar-EG') + ' ج';
 
+    // ===== المتبقي (وضع ذكي: الكل / يوم واحد / مدى تواريخ) =====
+    var mode = getRemainingMode(startDateStr, endDateStr);
+    var remainingList = computeRemainingList(mode, startDateStr, endDateStr);
+    document.getElementById('kpiRemaining').textContent = remainingList.length;
+
+    var scopeLabelEl = document.getElementById('remainingScopeLabel');
+    if (mode === 'all') scopeLabelEl.textContent = 'كل الوقت';
+    else if (mode === 'single') scopeLabelEl.textContent = (startDateStr === toLocalDateStr(new Date())) ? 'اليوم' : startDateStr;
+    else if (mode === 'range') scopeLabelEl.textContent = 'المدى المحدد';
+    else scopeLabelEl.textContent = 'كل الوقت (حدد مدى كامل للتدقيق)';
+
+    // ===== نسبة الإنجاز (محسوبة صح، مش بس من الزيارات المنفذة) =====
+    var rateEl = document.getElementById('kpiRate');
+    var rateNoteEl = document.getElementById('kpiRateNote');
+    if (mode === 'single') {
+      var weekday = weekdayNameOf(startDateStr);
+      var scheduledCount = (rawData.allClients || []).filter(function (c) { return c.day === weekday; }).length;
+      var rate = scheduledCount > 0 ? Math.round((done / scheduledCount) * 100) : 0;
+      rateEl.childNodes[0].nodeValue = rate + '%';
+      rateNoteEl.textContent = '';
+    } else if (mode === 'range') {
+      var totalSlots = 0;
+      var cursor = startDateStr, guard = 0;
+      while (cursor <= endDateStr && guard < 366) {
+        var wd = weekdayNameOf(cursor);
+        totalSlots += (rawData.allClients || []).filter(function (c) { return c.day === wd; }).length;
+        cursor = addDaysStr(cursor, 1);
+        guard++;
+      }
+      var rangeRate = totalSlots > 0 ? Math.round((done / totalSlots) * 100) : 0;
+      rateEl.childNodes[0].nodeValue = rangeRate + '%';
+      rateNoteEl.textContent = '';
+    } else {
+      // all / partial: مفيش نطاق محدد نقيس عليه، فالنسبة دي من الزيارات المنفذة بس
+      var attemptedRate = (done + notDone) > 0 ? Math.round((done / (done + notDone)) * 100) : 0;
+      rateEl.childNodes[0].nodeValue = attemptedRate + '%';
+      rateNoteEl.textContent = '(من الزيارات المنفذة فقط)';
+    }
+
+    return { filteredVisits: filteredVisits, startDateStr: startDateStr, endDateStr: endDateStr, mode: mode, remainingList: remainingList };
+  }
+
+  function renderChartsAndMap(shouldFit) {
+    var ctxData = renderDashboardKPIs();
+    var filteredVisits = ctxData.filteredVisits;
+
+    // إعادة حساب "أفضل العملاء" و "أسباب عدم الإتمام" حسب الفلتر الحالي فعليًا
+    var clientTotals = {};
+    filteredVisits.forEach(function (v) {
+      if (!v.client) return;
+      clientTotals[v.client] = (clientTotals[v.client] || 0) + (v.invoice || 0);
+    });
+    var topClientsArr = Object.keys(clientTotals).map(function (name) {
+      return { name: name, totalInvoices: clientTotals[name] };
+    }).sort(function (a, b) { return b.totalInvoices - a.totalInvoices; }).filter(function(c){ return c.totalInvoices > 0; }).slice(0, 10);
+
+    document.getElementById('topClientsList').innerHTML = topClientsArr.map(function (c) {
+      return '<div class="list-item"><span>' + c.name + '</span><span class="badge money">' + c.totalInvoices.toLocaleString('ar-EG') + ' ج</span></div>';
+    }).join('') || '<div style="padding:14px;color:var(--text-mute);">لا يوجد</div>';
+
+    var reasonsMap = {};
+    filteredVisits.filter(function (v) { return v.status === 'لا' && v.reason; }).forEach(function (v) {
+      var r = v.reason.trim();
+      if (r.length > 2) reasonsMap[r] = (reasonsMap[r] || 0) + 1;
+    });
+    var reasonsArr = Object.keys(reasonsMap).map(function (r) {
+      return { reason: r, count: reasonsMap[r] };
+    }).sort(function (a, b) { return b.count - a.count; }).slice(0, 5);
+
+    document.getElementById('reasonsList').innerHTML = reasonsArr.map(function (r) {
+      return '<div class="list-item"><span>' + r.reason + '</span><span class="badge" style="background:#fdeded;color:#c62828;">' + r.count + '</span></div>';
+    }).join('') || '<div style="padding:14px;color:var(--text-mute);">لا يوجد</div>';
+
+    // ===== الرسوم البيانية (مرتبة زمنيًا وبتوقيت محلي صحيح) =====
     var dailyCounts = {}, dailyRates = {};
-    filteredVisits.forEach(v => {
-      var d = new Date(v.date);
-      var day = d.toISOString().split('T')[0];
+    filteredVisits.forEach(function (v) {
+      var day = toLocalDateStr(v.date);
       dailyCounts[day] = (dailyCounts[day] || 0) + 1;
       dailyRates[day] = dailyRates[day] || { done: 0, total: 0 };
       dailyRates[day].total++;
       if (v.status === 'نعم') dailyRates[day].done++;
     });
 
+    var sortedDays = Object.keys(dailyCounts).sort();
+    var sortedRateDays = Object.keys(dailyRates).sort();
+
     var ctx1 = document.getElementById('visitsChart').getContext('2d');
     if (visitsChartObj) visitsChartObj.destroy();
     visitsChartObj = new Chart(ctx1, {
       type: 'line',
-      data: { labels: Object.keys(dailyCounts), datasets: [{ label: 'زيارات', data: Object.values(dailyCounts), borderColor: '#1F4E78', backgroundColor: 'rgba(31,78,120,0.1)', fill: true, tension: 0.3 }] },
+      data: { labels: sortedDays, datasets: [{ label: 'زيارات', data: sortedDays.map(function(d){return dailyCounts[d];}), borderColor: '#1F4E78', backgroundColor: 'rgba(31,78,120,0.1)', fill: true, tension: 0.3 }] },
       options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
     });
 
@@ -277,31 +512,33 @@
     if (rateChartObj) rateChartObj.destroy();
     rateChartObj = new Chart(ctx2, {
       type: 'line',
-      data: { labels: Object.keys(dailyRates), datasets: [{ label: 'نسبة الإنجاز %', data: Object.values(dailyRates).map(r => Math.round((r.done/r.total)*100)), borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true, tension: 0.3 }] },
+      data: { labels: sortedRateDays, datasets: [{ label: 'نسبة الإنجاز %', data: sortedRateDays.map(function(d){ return Math.round((dailyRates[d].done/dailyRates[d].total)*100); }), borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true, tension: 0.3 }] },
       options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100 } } }
     });
 
     var regionCounts = {};
-    filteredVisits.forEach(v => { regionCounts[v.region] = (regionCounts[v.region] || 0) + 1; });
-    var regionArr = Object.entries(regionCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
+    filteredVisits.forEach(function (v) { regionCounts[v.region] = (regionCounts[v.region] || 0) + 1; });
+    var regionArr = Object.entries(regionCounts).sort(function(a,b){return b[1]-a[1];}).slice(0, 5);
     var ctx3 = document.getElementById('regionChart').getContext('2d');
     if (regionChartObj) regionChartObj.destroy();
     regionChartObj = new Chart(ctx3, {
-      type: 'doughnut', data: { labels: regionArr.map(r => r[0]), datasets: [{ data: regionArr.map(r => r[1]), backgroundColor: ['#1F4E78', '#2e7d32', '#f57f17', '#c62828', '#6b7684'] }] },
+      type: 'doughnut', data: { labels: regionArr.map(function(r){return r[0];}), datasets: [{ data: regionArr.map(function(r){return r[1];}), backgroundColor: ['#1F4E78', '#2e7d32', '#f57f17', '#c62828', '#6b7684'] }] },
       options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
     });
 
-    updateMap(filteredVisits);
+    updateMap(filteredVisits, shouldFit !== false);
+
+    if (activeDrillDown) renderDrillDown(activeDrillDown);
   }
 
-  function updateMap(visits) {
+  function updateMap(visits, shouldFit) {
     var heatPoints = [], markers = [];
-    visits.forEach(v => {
+    visits.forEach(function (v) {
       if (v.lat && v.lng) {
         heatPoints.push([v.lat, v.lng, 0.5]);
         var color = v.status === 'نعم' ? 'green' : 'red';
         var marker = L.circleMarker([v.lat, v.lng], { color: color, fillColor: color, fillOpacity: 0.8, radius: 8 });
-        marker.bindPopup(`<b>${v.client}</b><br>التاريخ: ${new Date(v.date).toLocaleDateString('ar-EG')}<br>الحالة: ${v.status}<br>الفاتورة: ${v.invoice}<br><a href="https://www.google.com/maps?q=${v.lat},${v.lng}" target="_blank">فتح في خرائط جوجل</a>`);
+        marker.bindPopup('<b>' + v.client + '</b><br>التاريخ: ' + new Date(v.date).toLocaleDateString('ar-EG') + '<br>الحالة: ' + v.status + '<br>الفاتورة: ' + v.invoice + '<br><a href="https://www.google.com/maps?q=' + v.lat + ',' + v.lng + '" target="_blank">فتح في خرائط جوجل</a>');
         markers.push(marker);
       }
     });
@@ -312,39 +549,129 @@
     if (currentMapMode === 'heat') {
       if (heatPoints.length > 0) heatLayer = L.heatLayer(heatPoints, { radius: 25 }).addTo(map);
     } else {
-      markers.forEach(m => markerLayer.addLayer(m));
+      markers.forEach(function (m) { markerLayer.addLayer(m); });
       markerLayer.addTo(map);
     }
-    
-    if (heatPoints.length > 0) map.fitBounds(L.latLngBounds(heatPoints.map(p => [p[0], p[1]])));
+
+    // ✅ منعمل fitBounds غير لو فعلاً الفلتر اتغير، مش كل مرة نبدل وضع الخريطة
+    if (shouldFit && heatPoints.length > 0) {
+      map.fitBounds(L.latLngBounds(heatPoints.map(function(p){return [p[0], p[1]];})));
+    }
   }
 
   function switchMapMode(mode, btn) {
     currentMapMode = mode;
-    document.querySelectorAll('.map-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.map-btn').forEach(function (b) { b.classList.remove('active'); });
     btn.classList.add('active');
-    renderChartsAndMap();
+    renderChartsAndMap(false); // من غير إعادة ضبط تكبير الخريطة
   }
 
-  function exportToExcel() {
-    var startDateStr = document.getElementById('startDate').value;
-    var endDateStr = document.getElementById('endDate').value;
-    var filtered = rawData.allVisits.filter(v => {
-      if (!v.date) return false;
-      var d = new Date(v.date);
-      if (startDateStr && d < new Date(startDateStr)) return false;
-      if (endDateStr && d > new Date(endDateStr + 'T23:59:59')) return false;
-      return true;
-    });
+  // ===================================================
+  // Drill-down tables (تمت بنجاح / لم تتم / المتبقي)
+  // ===================================================
+  function toggleDrillDown(kind) {
+    if (activeDrillDown === kind) { closeDrillDown(); return; }
+    activeDrillDown = kind;
+    document.querySelectorAll('.kpi-card.clickable').forEach(function (c) { c.classList.remove('active-drill'); });
+    var cardIdMap = { done: 'cardDone', notdone: 'cardNotDone', remaining: 'cardRemaining' };
+    document.getElementById(cardIdMap[kind]).classList.add('active-drill');
+    document.getElementById('drillDownCard').style.display = 'block';
+    renderDrillDown(kind);
+    document.getElementById('drillDownCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
 
-    var visitsData = filtered.map(v => ({
-      "التاريخ": new Date(v.date).toLocaleString('ar-EG'),
-      "العميل": v.client,
-      "الحالة": v.status,
-      "المنطقة": v.region,
-      "قيمة الفاتورة": v.invoice,
-      "السبب": v.reason
-    }));
+  function closeDrillDown() {
+    activeDrillDown = null;
+    document.querySelectorAll('.kpi-card.clickable').forEach(function (c) { c.classList.remove('active-drill'); });
+    document.getElementById('drillDownCard').style.display = 'none';
+  }
+
+  function ddRow(name, phone, locationText, mapLink, lastInvoice, totalInvoices) {
+    var nameCell = mapLink
+      ? '<a class="dd-name-link" href="' + mapLink + '" target="_blank" title="' + (locationText || '') + '">' + name + '</a>'
+      : '<span class="dd-name-plain" title="' + (locationText || '') + '">' + name + '</span>';
+    return '<tr>' +
+      '<td>' + nameCell + '</td>' +
+      '<td>' + (phone || '-') + '</td>' +
+      '<td>' + (locationText || '-') + '</td>' +
+      '<td>' + (lastInvoice ? Number(lastInvoice).toLocaleString('ar-EG') + ' ج' : '-') + '</td>' +
+      '<td>' + (totalInvoices ? Number(totalInvoices).toLocaleString('ar-EG') + ' ج' : '-') + '</td>' +
+      '</tr>';
+  }
+
+  function renderDrillDown(kind) {
+    var f = getFilteredVisits();
+    var startDateStr = f.startDateStr, endDateStr = f.endDateStr;
+    var clientsByPhone = buildClientsByPhone();
+
+    var iconMap = { done: '✅', notdone: '❌', remaining: '⏳' };
+    var titleMap = { done: 'تمت بنجاح', notdone: 'لم تتم', remaining: 'المتبقي' };
+    document.getElementById('ddTitleIcon').textContent = iconMap[kind];
+    document.getElementById('ddTitleText').textContent = titleMap[kind];
+
+    var rowsHtml = '';
+    var count = 0;
+
+    if (kind === 'done' || kind === 'notdone') {
+      var wantedStatus = kind === 'done' ? 'نعم' : 'لا';
+      var rows = f.visits.filter(function (v) { return v.status === wantedStatus; });
+      count = rows.length;
+      rowsHtml = rows.map(function (v) {
+        var phoneClean = (v.phone || '').replace(/\s+/g, '');
+        var clientInfo = clientsByPhone[phoneClean];
+        var locationText = v.detailedAddress || v.region || (clientInfo ? (clientInfo.manualAddress || clientInfo.region) : '') || '';
+        var lastInv = clientInfo ? clientInfo.lastInvoice : v.invoice;
+        var totalInv = clientInfo ? clientInfo.totalInvoices : v.invoice;
+        return ddRow(v.client, v.phone, locationText, v.mapLink, lastInv, totalInv);
+      }).join('');
+
+      var scopeText = (!startDateStr && !endDateStr) ? 'كل الوقت'
+        : (startDateStr === endDateStr) ? ('يوم ' + startDateStr)
+        : ((startDateStr || '...') + ' إلى ' + (endDateStr || '...'));
+      document.getElementById('ddScopeNote').textContent = 'النطاق الحالي: ' + scopeText;
+
+    } else if (kind === 'remaining') {
+      var mode = getRemainingMode(startDateStr, endDateStr);
+      var list = computeRemainingList(mode, startDateStr, endDateStr);
+      count = list.length;
+      rowsHtml = list.map(function (c) {
+        var locationText = c.manualAddress || c.autoAddress || c.region || '';
+        // مفيش إحداثيات GPS للعميل اللي لسه ماتزارش، فمفيش رابط خريطة هنا
+        return ddRow(c.name, c.phone, locationText, '', c.lastInvoice, c.totalInvoices);
+      }).join('');
+
+      var noteMap = {
+        all: 'عملاء لم تتم زيارتهم إطلاقًا (كل الوقت)',
+        single: 'عملاء مجدولين ليوم ' + startDateStr + ' ولم تتم زيارتهم بعد',
+        range: 'عملاء فاتهم موعد واحد على الأقل بين ' + startDateStr + ' و ' + endDateStr,
+        partial: 'حدد مدى تاريخ كامل (من وإلى) لعرض المتبقي بدقة حسب الجدول — النتيجة الحالية لعملاء لم تتم زيارتهم إطلاقًا'
+      };
+      document.getElementById('ddScopeNote').textContent = noteMap[mode];
+    }
+
+    document.getElementById('ddCount').textContent = count;
+    document.getElementById('ddTableBody').innerHTML = rowsHtml || '<tr><td colspan="5" class="dd-empty">لا يوجد</td></tr>';
+  }
+
+  // ===================================================
+  // تصدير إكسيل (اسم الملف بيعكس نطاق التاريخ المختار)
+  // ===================================================
+  function exportToExcel() {
+    var f = getFilteredVisits();
+    var filtered = f.visits, startDateStr = f.startDateStr, endDateStr = f.endDateStr;
+
+    var visitsData = filtered.map(function (v) {
+      return {
+        "التاريخ": new Date(v.date).toLocaleString('ar-EG'),
+        "العميل": v.client,
+        "التليفون": v.phone,
+        "الحالة": v.status,
+        "المنطقة": v.region,
+        "العنوان": v.detailedAddress,
+        "قيمة الفاتورة": v.invoice,
+        "السبب": v.reason
+      };
+    });
 
     var wb = XLSX.utils.book_new();
     var ws1 = XLSX.utils.json_to_sheet(visitsData);
@@ -352,36 +679,47 @@
 
     var summary = [
       { "المؤشر": "إجمالي الزيارات", "القيمة": filtered.length },
-      { "المؤشر": "تمت بنجاح", "القيمة": filtered.filter(v => v.status === 'نعم').length },
-      { "المؤشر": "لم تتم", "القيمة": filtered.filter(v => v.status === 'لا').length }
+      { "المؤشر": "تمت بنجاح", "القيمة": filtered.filter(function(v){return v.status === 'نعم';}).length },
+      { "المؤشر": "لم تتم", "القيمة": filtered.filter(function(v){return v.status === 'لا';}).length }
     ];
     var ws2 = XLSX.utils.json_to_sheet(summary);
     XLSX.utils.book_append_sheet(wb, ws2, "ملخص");
 
-    XLSX.writeFile(wb, "تقرير_الزيارات.xlsx");
+    var scopeForName = (!startDateStr && !endDateStr) ? 'الكل'
+      : (startDateStr === endDateStr) ? startDateStr
+      : (startDateStr || 'بداية') + '_الى_' + (endDateStr || 'نهاية');
+    var filename = 'تقرير_الزيارات_' + scopeForName + '.xlsx';
+
+    XLSX.writeFile(wb, filename);
   }
 
   // ربط الفلتر بالرسم البياني
-  document.getElementById('startDate').addEventListener('change', function() {
+  document.getElementById('startDate').addEventListener('change', function () {
     document.getElementById('btnAll').classList.remove('active');
     document.getElementById('btnToday').classList.remove('active');
-    renderChartsAndMap();
+    renderChartsAndMap(true);
   });
-  document.getElementById('endDate').addEventListener('change', function() {
+  document.getElementById('endDate').addEventListener('change', function () {
     document.getElementById('btnAll').classList.remove('active');
     document.getElementById('btnToday').classList.remove('active');
-    renderChartsAndMap();
+    renderChartsAndMap(true);
   });
 
   initMap();
-  callApi('getDashboardData').then(res => {
+  callApi('getDashboardData').then(function (res) {
     if (res.ok) {
       rawData = res.data;
       renderDashboard();
       document.getElementById('loadingOverlay').style.display = 'none';
     } else {
-      document.getElementById('loadingOverlay').innerHTML = '<p style="color:red;">فشل تحميل البيانات.</p>';
+      document.getElementById('loadingText').textContent = 'فشل تحميل البيانات: ' + (res.error || '');
+      document.getElementById('loadSpinner').style.display = 'none';
+      document.getElementById('loadErrorBox').style.display = 'block';
     }
+  }).catch(function (err) {
+    document.getElementById('loadingText').textContent = 'تعذر الاتصال بالسيرفر: ' + err.message;
+    document.getElementById('loadSpinner').style.display = 'none';
+    document.getElementById('loadErrorBox').style.display = 'block';
   });
 </script>
 </body>
